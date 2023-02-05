@@ -39,13 +39,19 @@ region
 Read and load the data in R.
 
 ```{r}
+library(tidyverse)
+library(dslabs)
+library(dplyr)
+
 load(file='country.rda')
 ```
 
-1)  Perform a boxplot with ggplot in R where you can see in the x axis each continent and y axis the population just for year 1960, hint: use population/10\^6 and use the log transformation. Be careful on writing the axes labels. What continent has the largest median population size? Check in R. Explain what you have found with theoretical details (outliers, symmetry of the distribution, median and interquartile range).
+1) Perform a boxplot with ggplot in R where you can see in the x axis each continent and y axis the population just for year 1960, hint: use population/10\^6 and use the log transformation. Be careful on writing the axes labels. What continent has the largest median population size? Check in R. Explain what you have found with theoretical details (outliers, symmetry of the distribution, median and interquartile range).
 
 ```{r}
-
+filtered_data <- filter(gapminder, year==1960)
+p <- ggplot(filtered_data, aes(x=continent, y=population/10^6, col=continent)) + geom_boxplot() + scale_y_log10() + theme_minimal()
+p
 ```
 
 1)  Perform a boxplot with ggplot where you can see in the x axis each continent and y axis the population just for year 2010, hint: use population/10\^6 and use the log transformation. What continent has the largest median population size in this year? Check in R. Explain what you have found with theoretical details (outliers, symmetry of the distribution, median and interquartile range).
