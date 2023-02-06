@@ -49,18 +49,41 @@ load(file='country.rda')
 1) Perform a boxplot with ggplot in R where you can see in the x axis each continent and y axis the population just for year 1960, hint: use population/10\^6 and use the log transformation. Be careful on writing the axes labels. What continent has the largest median population size? Check in R. Explain what you have found with theoretical details (outliers, symmetry of the distribution, median and interquartile range).
 
 ```{r}
-filtered_data <- filter(gapminder, year==1960)
-p <- ggplot(filtered_data, aes(x=continent, y=population/10^6, col=continent)) + geom_boxplot() + scale_y_log10() + theme_minimal()
+filtered_data_1960 <- filter(gapminder, year==1960)
+p <- ggplot(filtered_data_1960, aes(x=continent, y=population/10^6, col=continent)) + geom_boxplot() + scale_y_log10() + theme_minimal() + labs(y="log population (in millions)", title="Continental population size in 1960")
 p
 ```
 
-1)  Perform a boxplot with ggplot where you can see in the x axis each continent and y axis the population just for year 2010, hint: use population/10\^6 and use the log transformation. What continent has the largest median population size in this year? Check in R. Explain what you have found with theoretical details (outliers, symmetry of the distribution, median and interquartile range).
+Based on the plot above, the continent with the largest median population size is Europe, meaning that countries in Europe had generally larger populations than other continents in 1960. The code below calculates the exact median population size:
 
-2)  What is the median population size for Africa to the nearest million? What proportion of countries in Europe have populations below 14 million? Perform in R.
+```{r}
+filter(filtered_data_1960, continent=="Europe") %>%  pull(population) %>% median()
 
-3)  If we use a log transformation, which continent has the largest interquartile range? Perform and plot in R. Explain what you have found, give also the theoretical implications.
+```
 
-Compare (in ggplot) the countries in term of population using boxplots with two different colours for year 1960 and 2010. Try to make a plot exactly as Figure 1 (just the colour can change).
+As we can see, the median population size of Europe in 1960 was 7,065,525. In general we see that populations for each continent are symmetric around the median, that is the 1st and 3rd quartiles are roughly equidistant from the median. The notable exception being Oceania with a clear positive skew. However, noting that this data is a plotted on a log transformed y-axis, we can conclude that the country specific populations for all continents exhibit a rightward skew.
+
+Only two continents exhibit outliers, with Africa having a country with a country population much smaller than the others. In contrast we see that Europe has outlier countries that are both larger and smaller than 1.5x the IQR (the threshold for being an outlier).
+
+2) Perform a boxplot with ggplot where you can see in the x axis each continent and y axis the population just for year 2010, hint: use population/10\^6 and use the log transformation. What continent has the largest median population size in this year? Check in R. Explain what you have found with theoretical details (outliers, symmetry of the distribution, median and interquartile range).
+
+```{r}
+filtered_data_2010 <- filter(gapminder, year==2010)
+p <- ggplot(filtered_data_2010, aes(x=continent, y=population/10^6, col=continent)) + geom_boxplot() + scale_y_log10() + theme_minimal() + labs(y="log population (in millions)", title="Continental population size in 2010")
+p
+```
+
+3) What is the median population size for Africa to the nearest million? What proportion of countries in Europe have populations below 14 million? Perform in R.
+
+The code below calculates the median population size for Africa
+
+```{r}
+
+```
+
+4) If we use a log transformation, which continent has the largest interquartile range? Perform and plot in R. Explain what you have found, give also the theoretical implications.
+
+5) Compare (in ggplot) the countries in term of population using boxplots with two different colours for year 1960 and 2010. Try to make a plot exactly as Figure 1 (just the colour can change).
 
 ```{r, out.width="0.8\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Population per country"), echo=FALSE}
 knitr::include_graphics("plot1.pdf")
