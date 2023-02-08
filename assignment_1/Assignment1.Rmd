@@ -78,12 +78,27 @@ p
 The code below calculates the median population size for Africa
 
 ```{r}
+filter(gapminder, continent=="Africa") %>%  pull(population) %>% median(na.rm=TRUE) / 10^6
 
+```
+
+The code below calculates the proportion of countries in Europe with populations below 14 million.
+
+```{r}
+filtered_data_europe <- filter(gapminder, continent=="Europe")
+num_countries <- nrow(filtered_data_europe)
+nrow(filter(filtered_data_europe, population < (14 * 10^6))) / num_countries
 ```
 
 4) If we use a log transformation, which continent has the largest interquartile range? Perform and plot in R. Explain what you have found, give also the theoretical implications.
 
-5) Compare (in ggplot) the countries in term of population using boxplots with two different colours for year 1960 and 2010. Try to make a plot exactly as Figure 1 (just the colour can change).
+To calculate the log transformed IQR, we will first
+
+```{r}
+quantile()
+```
+
+4)  Compare (in ggplot) the countries in term of population using boxplots with two different colours for year 1960 and 2010. Try to make a plot exactly as Figure 1 (just the colour can change).
 
 ```{r, out.width="0.8\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Population per country"), echo=FALSE}
 knitr::include_graphics("plot1.pdf")
