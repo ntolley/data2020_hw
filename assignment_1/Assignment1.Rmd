@@ -92,19 +92,36 @@ nrow(filter(filtered_data_europe, population < (14 * 10^6))) / num_countries
 
 4) If we use a log transformation, which continent has the largest interquartile range? Perform and plot in R. Explain what you have found, give also the theoretical implications.
 
-To calculate the log transformed IQR, we will first
+As the plot below shows, across all years in the data set the Americas show the largest interquartile range on log transformed data.
 
 ```{r}
-quantile()
+iqr_table <- group_by(gapminder, continent) %>% summarize(IQR=IQR(log10(population), na.rm=TRUE))
+p <- ggplot(iqr_table, aes(x=continent, y=IQR, fill=continent)) + geom_col() + theme_minimal() + labs(y='log(IQR of population)')
+p
+
 ```
 
-4)  Compare (in ggplot) the countries in term of population using boxplots with two different colours for year 1960 and 2010. Try to make a plot exactly as Figure 1 (just the colour can change).
+5) Compare (in ggplot) the countries in term of population using boxplots with two different colours for year 1960 and 2010. Try to make a plot exactly as Figure 1 (just the colour can change).
+
+```{r}
+compare_df <- rbind(filtered_data_1960, filtered_data_2010)
+compare_df$year <- as.character(compare_df$year)
+
+p <- ggplot(compare_df, aes(x=continent, y=log10(population), fill=year)) + geom_boxplot() + theme_bw()
+p
+
+```
 
 ```{r, out.width="0.8\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Population per country"), echo=FALSE}
 knitr::include_graphics("plot1.pdf")
 ```
 
-6)  Compare (in ggplot) the countries in term of infant mortality using boxplots with two different colours for year 1960 and 2010. Try to make a plot exactly as Figure 2 (just the colour can change).
+6) Compare (in ggplot) the countries in term of infant mortality using boxplots with two different colours for year 1960 and 2010. Try to make a plot exactly as Figure 2 (just the colour can change).
+
+```{r}
+p <- ggplot(compare_df, aes(x=continent, y=infant_mortality, fill=year)) + geom_boxplot(na.rm = TRUE) + theme_bw()
+p
+```
 
 ```{r, out.width="0.8\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Infant Mortality per country"), echo=FALSE}
 knitr::include_graphics("plot2.pdf")
