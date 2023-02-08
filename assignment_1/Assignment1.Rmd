@@ -46,11 +46,11 @@ library(dplyr)
 load(file='country.rda')
 ```
 
-1) Perform a boxplot with ggplot in R where you can see in the x axis each continent and y axis the population just for year 1960, hint: use population/10\^6 and use the log transformation. Be careful on writing the axes labels. What continent has the largest median population size? Check in R. Explain what you have found with theoretical details (outliers, symmetry of the distribution, median and interquartile range).
+1)  Perform a boxplot with ggplot in R where you can see in the x axis each continent and y axis the population just for year 1960, hint: use population/10\^6 and use the log transformation. Be careful on writing the axes labels. What continent has the largest median population size? Check in R. Explain what you have found with theoretical details (outliers, symmetry of the distribution, median and interquartile range).
 
 ```{r}
 filtered_data_1960 <- filter(gapminder, year==1960)
-p <- ggplot(filtered_data_1960, aes(x=continent, y=population/10^6, col=continent)) + geom_boxplot() + scale_y_log10() + theme_minimal() + labs(y="log population (in millions)", title="Continental population size in 1960")
+p <- ggplot(filtered_data_1960, aes(x=continent, y=population/10^6, fill=continent)) + geom_boxplot() + scale_y_log10() + theme_minimal() + labs(y="log population (in millions)", title="Continental population size in 1960")
 p
 ```
 
@@ -65,15 +65,15 @@ As we can see, the median population size of Europe in 1960 was 7,065,525. In ge
 
 Only two continents exhibit outliers, with Africa having a country with a country population much smaller than the others. In contrast we see that Europe has outlier countries that are both larger and smaller than 1.5x the IQR (the threshold for being an outlier).
 
-2) Perform a boxplot with ggplot where you can see in the x axis each continent and y axis the population just for year 2010, hint: use population/10\^6 and use the log transformation. What continent has the largest median population size in this year? Check in R. Explain what you have found with theoretical details (outliers, symmetry of the distribution, median and interquartile range).
+2)  Perform a boxplot with ggplot where you can see in the x axis each continent and y axis the population just for year 2010, hint: use population/10\^6 and use the log transformation. What continent has the largest median population size in this year? Check in R. Explain what you have found with theoretical details (outliers, symmetry of the distribution, median and interquartile range).
 
 ```{r}
 filtered_data_2010 <- filter(gapminder, year==2010)
-p <- ggplot(filtered_data_2010, aes(x=continent, y=population/10^6, col=continent)) + geom_boxplot() + scale_y_log10() + theme_minimal() + labs(y="log population (in millions)", title="Continental population size in 2010")
+p <- ggplot(filtered_data_2010, aes(x=continent, y=population/10^6, fill=continent)) + geom_boxplot() + scale_y_log10() + theme_minimal() + labs(y="log population (in millions)", title="Continental population size in 2010")
 p
 ```
 
-3) What is the median population size for Africa to the nearest million? What proportion of countries in Europe have populations below 14 million? Perform in R.
+3)  What is the median population size for Africa to the nearest million? What proportion of countries in Europe have populations below 14 million? Perform in R.
 
 The code below calculates the median population size for Africa
 
@@ -90,7 +90,7 @@ num_countries <- nrow(filtered_data_europe)
 nrow(filter(filtered_data_europe, population < (14 * 10^6))) / num_countries
 ```
 
-4) If we use a log transformation, which continent has the largest interquartile range? Perform and plot in R. Explain what you have found, give also the theoretical implications.
+4)  If we use a log transformation, which continent has the largest interquartile range? Perform and plot in R. Explain what you have found, give also the theoretical implications.
 
 As the plot below shows, across all years in the data set the Americas show the largest interquartile range on log transformed data.
 
@@ -101,12 +101,11 @@ p
 
 ```
 
-5) Compare (in ggplot) the countries in term of population using boxplots with two different colours for year 1960 and 2010. Try to make a plot exactly as Figure 1 (just the colour can change).
+5)  Compare (in ggplot) the countries in term of population using boxplots with two different colours for year 1960 and 2010. Try to make a plot exactly as Figure 1 (just the colour can change).
 
 ```{r}
 compare_df <- rbind(filtered_data_1960, filtered_data_2010)
 compare_df$year <- as.character(compare_df$year)
-
 p <- ggplot(compare_df, aes(x=continent, y=log10(population), fill=year)) + geom_boxplot() + theme_bw()
 p
 
@@ -116,7 +115,7 @@ p
 knitr::include_graphics("plot1.pdf")
 ```
 
-6) Compare (in ggplot) the countries in term of infant mortality using boxplots with two different colours for year 1960 and 2010. Try to make a plot exactly as Figure 2 (just the colour can change).
+6)  Compare (in ggplot) the countries in term of infant mortality using boxplots with two different colours for year 1960 and 2010. Try to make a plot exactly as Figure 2 (just the colour can change).
 
 ```{r}
 p <- ggplot(compare_df, aes(x=continent, y=infant_mortality, fill=year)) + geom_boxplot(na.rm = TRUE) + theme_bw()
@@ -127,13 +126,33 @@ p
 knitr::include_graphics("plot2.pdf")
 ```
 
-7)  What proportion of the infant mortality is between 100 and 150? And what is its approximation to a normal distribution of this proportion? What proportion of the infant mortality is greater than 150? And what is its approximation to a normal distribution of the proportions? Perform in R. Explain what you have found, give also the theoretical implications and what theorem or statistical assumptions you are using.
+7) What proportion of the infant mortality is between 100 and 150? And what is its approximation to a normal distribution of this proportion? What proportion of the infant mortality is greater than 150? And what is its approximation to a normal distribution of the proportions? Perform in R. Explain what you have found, give also the theoretical implications and what theorem or statistical assumptions you are using.
 
-8)  In ggplot perform both a histogram and a curve for infant mortality, use two different colours for year 1960 and 2010. Does the infertility follow a normal distribution? Are the two distribution symmetric or skewed? Be careful to choose the right x axis for the histogram.
+The code below calculates the proportion of infant mortality between 100 and 150 across all years/countries in the dataset. We can see that only 12.6% of the dataset fits this requirement.
 
-9)  Perform a q-q plot for the infant mortality to check if this variables is normal or not. Write the label of the axes in the appropriate way. Explain what you have found including the theoretical implications.
+```{r}
+infant_mortality_100_150 <- filter(gapminder, infant_mortality <= 150, infant_mortality > 100)
+nrow(infant_mortality_100_150) / nrow(gapminder) 
 
-10) Compare the regions in term of infant mortality for the two years 1960 and 2010 using the barplot. Try to make a plot exactly as Figure 3 (just the colour can change). Create a binary variable, with value 1 if life-expectancy is greater than 65 (group A), 0 otherwise (group B). Then perform the appropriate two sample test to know if the mean of the infant mortality is the same in group A and B (remember to check the variance of the two groups). Explain your results.
+```
+
+To find the approximation to the normal distribution of this proportion, we simply need to calculate the mean and standard deviation of the data. This parameterizes a normal approximation, which can be visualized against a histogram of the real data.
+
+```{r}
+mean_100_150 <- mean(infant_mortality_100_150$infant_mortality, na.rm = TRUE)
+sd_100_150 <- sd(infant_mortality_100_150$infant_mortality, na.rm = TRUE)
+
+x <- seq(75, 175, length = 1000) 
+y <- dnorm(x, mean_100_150, sd_100_150)
+p <- ggplot(infant_mortality_100_150, aes(x=infant_mortality)) + geom_histogram(aes(y = ..density..)) + stat_function(fun = dnorm, args = list(mean = mean_100_150, sd = sd_100_150))
+p
+```
+
+7)  In ggplot perform both a histogram and a curve for infant mortality, use two different colours for year 1960 and 2010. Does the infertility follow a normal distribution? Are the two distribution symmetric or skewed? Be careful to choose the right x axis for the histogram.
+
+8)  Perform a q-q plot for the infant mortality to check if this variables is normal or not. Write the label of the axes in the appropriate way. Explain what you have found including the theoretical implications.
+
+9)  Compare the regions in term of infant mortality for the two years 1960 and 2010 using the barplot. Try to make a plot exactly as Figure 3 (just the colour can change). Create a binary variable, with value 1 if life-expectancy is greater than 65 (group A), 0 otherwise (group B). Then perform the appropriate two sample test to know if the mean of the infant mortality is the same in group A and B (remember to check the variance of the two groups). Explain your results.
 
 ```{r, out.width="0.8\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Infant Mortality per region"), echo=FALSE}
 knitr::include_graphics("plot3.pdf")
