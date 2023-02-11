@@ -1,6 +1,8 @@
 ---
 title: "Assignment 1"
-output: pdf_document
+output: 
+  pdf_document: 
+    latex_engine: xelatex
 ---
 
 ```{r setup, include=FALSE}
@@ -50,7 +52,9 @@ load(file='country.rda')
 
 ```{r}
 filtered_data_1960 <- filter(gapminder, year==1960)
-p <- ggplot(filtered_data_1960, aes(x=continent, y=population/10^6, fill=continent)) + geom_boxplot()  + theme_minimal() + labs(y="log population (in millions)", title="Continental population size in 1960") + scale_y_log10()
+p <- ggplot(filtered_data_1960, aes(x=continent, y=population/10^6, fill=continent)) + 
+  geom_boxplot()  + theme_minimal() + 
+  labs(y="log population (in millions)", title="Continental population size in 1960") + scale_y_log10()
 p
 ```
 
@@ -71,7 +75,9 @@ The results for 2010 are rather similar to those of 1960. Again the majority for
 
 ```{r}
 filtered_data_2010 <- filter(gapminder, year==2010)
-p <- ggplot(filtered_data_2010, aes(x=continent, y=population/10^6, fill=continent)) + geom_boxplot() + scale_y_log10() + theme_minimal() + labs(y="log population (in millions)", title="Continental population size in 2010")
+p <- ggplot(filtered_data_2010, aes(x=continent, y=population/10^6, fill=continent)) + 
+  geom_boxplot() + scale_y_log10() + theme_minimal() + 
+  labs(y="log population (in millions)", title="Continental population size in 2010")
 p
 ```
 
@@ -100,7 +106,8 @@ With this in mind, we can interpret the plot below as having the Americas having
 
 ```{r}
 iqr_table <- group_by(gapminder, continent) %>% summarize(IQR=IQR(log10(population), na.rm=TRUE))
-p <- ggplot(iqr_table, aes(x=continent, y=IQR, fill=continent)) + geom_col() + theme_minimal() + labs(y='log(IQR of population)')
+p <- ggplot(iqr_table, aes(x=continent, y=IQR, fill=continent)) + geom_col() + 
+  theme_minimal() + labs(y='log(IQR of population)')
 p
 
 ```
@@ -110,7 +117,9 @@ p
 ```{r}
 compare_df <- rbind(filtered_data_1960, filtered_data_2010)
 compare_df$year <- as.character(compare_df$year)
-p <- ggplot(compare_df, aes(x=continent, y=population / (10^6), fill=year)) + geom_boxplot() + theme_bw() + scale_y_log10() + labs(y='Population in millions')
+p <- ggplot(compare_df, aes(x=continent, y=population / (10^6), fill=year)) + 
+  geom_boxplot() + theme_bw() + scale_y_log10() + 
+  labs(y='Population in millions', title="Figure 1: Population per country")
 p
 
 ```
@@ -122,7 +131,10 @@ knitr::include_graphics("plot1.pdf")
 6)  Compare (in ggplot) the countries in term of infant mortality using boxplots with two different colours for year 1960 and 2010. Try to make a plot exactly as Figure 2 (just the colour can change).
 
 ```{r}
-p <- ggplot(compare_df, aes(x=continent, y=infant_mortality, fill=year)) + geom_boxplot(na.rm = TRUE) + theme_bw() + labs(y='Infant Mortality') + scale_y_log10()
+p <- ggplot(compare_df, aes(x=continent, y=infant_mortality, fill=year)) + 
+  geom_boxplot(na.rm = TRUE) + theme_bw() + 
+  labs(y='Infant Mortality', title="Figure 2: Infant Mortality per country") + 
+  scale_y_log10()
 p
 ```
 
@@ -148,7 +160,10 @@ Additionally, from the previous question we know that the countries belonging to
 mean_100_150 <- mean(infant_mortality_100_150$infant_mortality, na.rm = TRUE)
 sd_100_150 <- sd(infant_mortality_100_150$infant_mortality, na.rm = TRUE)
 
-p <- ggplot(infant_mortality_100_150, aes(x=infant_mortality)) + geom_histogram(aes(y = ..density..),fill='#56B4E9', na.rm = TRUE) + stat_function(fun = dnorm, args = list(mean = mean_100_150, sd = sd_100_150), size=2) + xlim(75, 175)
+p <- ggplot(infant_mortality_100_150, aes(x=infant_mortality)) + 
+  geom_histogram(aes(y = ..density..),fill='#56B4E9', na.rm = TRUE, binwidth=1) + 
+  stat_function(fun = dnorm, args = list(mean = mean_100_150, sd = sd_100_150), size=2) + 
+  xlim(75, 175)
 p
 ```
 
@@ -165,18 +180,31 @@ nrow(infant_mortality_150) / nrow(gapminder)
 mean_150 <- mean(infant_mortality_150$infant_mortality, na.rm = TRUE)
 sd_150 <- sd(infant_mortality_150$infant_mortality, na.rm = TRUE)
 
-p <- ggplot(infant_mortality_150, aes(x=infant_mortality)) + geom_histogram(aes(y = ..density..),fill='#56B4E9', na.rm = TRUE) + stat_function(fun = dnorm, args = list(mean = mean_150, sd = sd_150), size=2) + xlim(145, 300)
+p <- ggplot(infant_mortality_150, aes(x=infant_mortality)) + 
+  geom_histogram(aes(y = ..density..),fill='#56B4E9', na.rm = TRUE, binwidth=2) + 
+  stat_function(fun = dnorm, args = list(mean = mean_150, sd = sd_150), size=2) + 
+  xlim(145, 300)
 p
 
 ```
 
-8) In ggplot perform both a histogram and a curve for infant mortality, use two different colours for year 1960 and 2010. Does the infertility follow a normal distribution? Are the two distribution symmetric or skewed? Be careful to choose the right x axis for the histogram.
+8)  In ggplot perform both a histogram and a curve for infant mortality, use two different colours for year 1960 and 2010. Does the infertility follow a normal distribution? Are the two distribution symmetric or skewed? Be careful to choose the right x axis for the histogram.
 
 Neither of the infant mortality rates for 1960 or 2010 follow a normal distribution indicated by the poor agreement between the empirical histogram and the normal approximation. Instead we see that the distributions exhibit a rightward skew, with the mode of the data being smaller than the mean/median. We can see this by overlaying the normal approximation of both distributions whose center indicates the true mean of the data.
 
 ```{r}
 
-p <- ggplot(compare_df, aes(x=infant_mortality, fill=year)) + geom_histogram(aes(y = ..density..), na.rm = TRUE) + stat_function(fun = dnorm, args = list(mean = mean(filtered_data_1960$infant_mortality, na.rm = TRUE), sd = sd(filtered_data_1960$infant_mortality, na.rm = TRUE)), size=2) + stat_function(fun = dnorm, args = list(mean = mean(filtered_data_2010$infant_mortality, na.rm = TRUE), sd = sd(filtered_data_2010$infant_mortality, na.rm = TRUE)), size=2) + theme_minimal()
+p <- ggplot(compare_df, aes(x=infant_mortality, fill=year)) + 
+  geom_histogram(aes(y = ..density..), na.rm = TRUE, binwidth=10) + 
+  stat_function(fun = dnorm, args = 
+                  list(mean = mean(filtered_data_1960$infant_mortality, na.rm = TRUE), sd = 
+                         sd(filtered_data_1960$infant_mortality, na.rm = TRUE)), size=2) + 
+  stat_function(fun = dnorm, args = 
+                  list(mean = mean(filtered_data_2010$infant_mortality, na.rm = TRUE), sd = 
+                         sd(filtered_data_2010$infant_mortality, na.rm = TRUE)), size=2) +
+  theme_minimal()
+
+suppressWarnings(print(p))
 
 ```
 
@@ -190,7 +218,9 @@ Instead we see that lowest and largest values of observed infant mortality rate 
 p <- seq(0.05, 0.95, 0.05)
 
 sample_quantiles <- quantile(gapminder$infant_mortality, p, na.rm=TRUE)
-theoretical_quantiles <- qnorm(p, mean = mean(gapminder$infant_mortality,na.rm=TRUE), sd = sd(gapminder$infant_mortality, na.rm=TRUE))
+theoretical_quantiles <- qnorm(p, mean = 
+                                 mean(gapminder$infant_mortality,na.rm=TRUE), sd = 
+                                 sd(gapminder$infant_mortality, na.rm=TRUE))
 
 qplot(theoretical_quantiles, sample_quantiles) + geom_abline()
 ```
@@ -198,11 +228,16 @@ qplot(theoretical_quantiles, sample_quantiles) + geom_abline()
 10) Compare the regions in term of infant mortality for the two years 1960 and 2010 using the barplot. Try to make a plot exactly as Figure 3 (just the colour can change). Create a binary variable, with value 1 if life-expectancy is greater than 65 (group A), 0 otherwise (group B). Then perform the appropriate two sample test to know if the mean of the infant mortality is the same in group A and B (remember to check the variance of the two groups). Explain your results.
 
 ```{r}
-max_infant_mortality <- summarize(group_by(compare_df, region, year), infant_mortality=max(infant_mortality, na.rm=TRUE))
-max_infant_mortality$infant_mortality[is.infinite(max_infant_mortality$infant_mortality)] <- NA
+options(warn=-1)
+max_infant_mortality <- summarize(group_by(compare_df, region, year), 
+                                  infant_mortality=max(infant_mortality, na.rm=TRUE))
+max_infant_mortality$infant_mortality[
+  is.infinite(max_infant_mortality$infant_mortality)] <- NA
                                   
                                   
-p <- ggplot(max_infant_mortality, aes(x=infant_mortality, y=region, fill=year, group=region)) + geom_col(position='dodge2', na.rm=TRUE) + theme_bw() + labs(x='Infant Mortality', y='Region')
+p <- ggplot(max_infant_mortality, aes(x=infant_mortality, y=region, fill=year, group=region)) + 
+  geom_col(position='dodge2', na.rm=TRUE) + theme_bw() + 
+  labs(x='Infant Mortality', y='Region', title="Figure 3: Infant Mortality per region")
 p
 ```
 
