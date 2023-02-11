@@ -50,7 +50,7 @@ load(file='country.rda')
 
 ```{r}
 filtered_data_1960 <- filter(gapminder, year==1960)
-p <- ggplot(filtered_data_1960, aes(x=continent, y=population/10^6, fill=continent)) + geom_boxplot() + scale_y_log10() + theme_minimal() + labs(y="log population (in millions)", title="Continental population size in 1960")
+p <- ggplot(filtered_data_1960, aes(x=continent, y=population/10^6, fill=continent)) + geom_boxplot()  + theme_minimal() + labs(y="log population (in millions)", title="Continental population size in 1960") + scale_y_log10()
 p
 ```
 
@@ -61,11 +61,13 @@ filter(filtered_data_1960, continent=="Europe") %>%  pull(population) %>% median
 
 ```
 
-As we can see, the median population size of Europe in 1960 was 7,065,525. In general we see that populations for each continent are symmetric around the median, that is the 1st and 3rd quartiles are roughly equidistant from the median. The notable exception being Oceania with a clear positive skew. However, noting that this data is a plotted on a log transformed y-axis, we can conclude that the country specific populations for all continents exhibit a rightward skew.
+As we can see, the median population size of Europe in 1960 was 7,065,525. In general we see that populations for each continent are symmetric around the median, that is the 1st and 3rd quartiles are roughly equidistant from the median. The notable exception being Oceania with a clear positive skew, and then Africa and Europe with slight positive skews. However, noting that this data is a plotted on a log transformed y-axis, we can conclude that the country specific populations for all continents exhibit a positive skew. Since the log transform for Oceania did not correct this positive skew, then we can conclude that it exhibits by far the strongest positive skew.
 
 Only two continents exhibit outliers, with Africa having a country with a country population much smaller than the others. In contrast we see that Europe has outlier countries that are both larger and smaller than 1.5x the IQR (the threshold for being an outlier).
 
 2)  Perform a boxplot with ggplot where you can see in the x axis each continent and y axis the population just for year 2010, hint: use population/10\^6 and use the log transformation. What continent has the largest median population size in this year? Check in R. Explain what you have found with theoretical details (outliers, symmetry of the distribution, median and interquartile range).
+
+The results for 2010 are rather similar to those of 1960. Again the majority for distributions are symmetric on the log scale (indicated by equidistant 1st and 3rd quartiles to the median), with Oceania being the most glaring exception. We additionally see the outliers are present on the same continents for 2010 as 1960, with one country much smaller than the rest in Africa. In Europe we again see 2 smaller, and 1 larger country relative to remaining countries in Europe.
 
 ```{r}
 filtered_data_2010 <- filter(gapminder, year==2010)
@@ -92,7 +94,9 @@ nrow(filter(filtered_data_europe, population < (14 * 10^6))) / num_countries
 
 4)  If we use a log transformation, which continent has the largest interquartile range? Perform and plot in R. Explain what you have found, give also the theoretical implications.
 
-As the plot below shows, across all years in the data set the Americas show the largest interquartile range on log transformed data.
+As the plot below shows, across all years in the data set the Americas show the largest interquartile range (IQR) on log transformed data. On un-transformed data the IQR can be used to assess variance of the data. However, it is not true in general that the largest IQR in un-transformed data will remain to be the largest after a log transformed data. One way this can be interpreted is assessing the spread of the data when controlling for the mean/median values. The result is that the same magnitude IQR's get smaller when the mean/median of the data is larger, allowing us to compare the relative spread of the data when accounting for the offset of the mean.
+
+With this in mind, we can interpret the plot below as having the Americas having the largest IQR after correcting for the mean population size.
 
 ```{r}
 iqr_table <- group_by(gapminder, continent) %>% summarize(IQR=IQR(log10(population), na.rm=TRUE))
@@ -150,7 +154,7 @@ p
 
 As we can see the normal distribution is a poor approximation for this data as the tails are bounded at 100 and 150, and the mean is clearly different from the mode of the empirical data. A uniform distribution may be more appropriate here.
 
-Repeating the same analysis as above, we see that only 3.9% of the dataset has an infant mortality above 150. Additionally we see that normal distribution is still not a good approximation for this data which exhibits a strong rightward skew, making the mean of the empirical data (and therefore the normal distribution) far from the empirical histogram.
+Repeating the same analysis as above, we see that only 3.9% of the dataset has an infant mortality above 150. Additionally we see that normal distribution is still not a good approximation for this data which exhibits a strong rightward skew, making the mean of the empirical data (and therefore the normal distribution) far from the mode empirical histogram.
 
 ```{r}
 infant_mortality_150 <- filter(gapminder, infant_mortality > 150)
