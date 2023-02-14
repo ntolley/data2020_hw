@@ -152,40 +152,41 @@ nrow(infant_mortality_100_150) / nrow(gapminder)
 
 ```
 
-To find the approximation to the normal distribution of this proportion, we simply need to calculate the mean and standard deviation of the data. This parameterizes a normal approximation, which can be visualized against a histogram of the real data. To apply the normal approximation we are assuming that every entry for infant mortality in the gapminder dataset is independent and identically distributed (IID). Unfortunately we cannot make the first assumption of independence as we already know that the various entries in the dataset span multiple years for the same country.
-
-Additionally, from the previous question we know that the countries belonging to different continents have infant mortality rates with a mean that changes dramatically across years. This means that we can't assume the data is identically distributed, meaning that the assumptions of the normal distribution are not met. Nevertheless, we can still visualize the theoretical normal on top of the empirical histogram.
-
-```{r}
-mean_100_150 <- mean(infant_mortality_100_150$infant_mortality, na.rm = TRUE)
-sd_100_150 <- sd(infant_mortality_100_150$infant_mortality, na.rm = TRUE)
-
-p <- ggplot(infant_mortality_100_150, aes(x=infant_mortality)) + 
-  geom_histogram(aes(y = ..density..),fill='#56B4E9', na.rm = TRUE, binwidth=1) + 
-  stat_function(fun = dnorm, args = list(mean = mean_100_150, sd = sd_100_150), size=2) + 
-  xlim(75, 175)
-p
-```
-
-As we can see the normal distribution is a poor approximation for this data as the tails are bounded at 100 and 150, and the mean is clearly different from the mode of the empirical data. A uniform distribution may be more appropriate here.
-
-Repeating the same analysis as above, we see that only 3.9% of the dataset has an infant mortality above 150. Additionally we see that normal distribution is still not a good approximation for this data which exhibits a strong rightward skew, making the mean of the empirical data (and therefore the normal distribution) far from the mode empirical histogram.
+Similarly we can calculate the observed proportion that's greater than 150, the code below reveals that only 3.9% of the data fits this condition.
 
 ```{r}
 infant_mortality_150 <- filter(gapminder, infant_mortality > 150)
 nrow(infant_mortality_150) / nrow(gapminder) 
 ```
 
+To find the approximation to the normal distribution of this proportion, we simply need to calculate the mean and standard deviation of the data. This parameterizes a normal approximation, which can be visualized against a histogram of the real data. To apply the normal approximation we are assuming that every entry for infant mortality in the gapminder dataset is independent and identically distributed (IID). Unfortunately we cannot make the first assumption of independence as we already know that the various entries in the dataset span multiple years for the same country.
+
+Additionally, from the previous question we know that the countries belonging to different continents have infant mortality rates with a mean that changes dramatically across years. This means that we can't assume the data is identically distributed, meaning that the assumptions of the normal distribution are not met. Nevertheless, we can still visualize the theoretical normal on top of the empirical histogram.
+
 ```{r}
-mean_150 <- mean(infant_mortality_150$infant_mortality, na.rm = TRUE)
-sd_150 <- sd(infant_mortality_150$infant_mortality, na.rm = TRUE)
+mean_im <- mean(gapminder$infant_mortality, na.rm = TRUE)
+sd_im <- sd(gapminder$infant_mortality, na.rm = TRUE)
 
-p <- ggplot(infant_mortality_150, aes(x=infant_mortality)) + 
-  geom_histogram(aes(y = ..density..),fill='#56B4E9', na.rm = TRUE, binwidth=2) + 
-  stat_function(fun = dnorm, args = list(mean = mean_150, sd = sd_150), size=2) + 
-  xlim(145, 300)
+p <- ggplot(gapminder, aes(x=infant_mortality)) + 
+  geom_histogram(aes(y = ..density..),fill='#56B4E9', na.rm = TRUE, binwidth=1) + 
+  stat_function(fun = dnorm, args = list(mean = mean_im, sd = sd_im), size=2) + 
+  geom_vline(xintercept=100) +  geom_vline(xintercept=150)
+  # xlim(75, 175)
 p
+```
 
+As we can see the normal distribution is a poor approximation for this data as the mean is clearly different from the mode of the empirical data. Additionally it is highly asymmetric with a strong rightward skew.
+
+Using the normal approximation to this data, we can calculate the theoretical proportion of infant mortality between 100 and 150 which is 15.1%. While the normal approximation is not appropriate for the data, we can see that the theoretical and observed (12.6%) proportions are not too different from one another.
+
+```{r}
+pnorm(150, mean=mean_im, sd=sd_im) - pnorm(100, mean=mean_im, sd=sd_im)
+```
+
+Similarly we can calculate the theoretical proportion greater than 150 which is 2.4%. Again the theoretical proportion is not excessively far from the observed (3.9%).
+
+```{r}
+1 - pnorm(150, mean=mean_im, sd=sd_im)
 ```
 
 8)  In ggplot perform both a histogram and a curve for infant mortality, use two different colours for year 1960 and 2010. Does the infertility follow a normal distribution? Are the two distribution symmetric or skewed? Be careful to choose the right x axis for the histogram.
