@@ -1,0 +1,50 @@
+---
+title: "Assignment 2"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**NAME: Your Name **  
+**DUE DATE: February 28th, 6pm** 
+
+## Problem 1 (100 pts)
+
+In the earnings dataset you can find salary (_earn_) and some socio-demographic characteristics of each subject, including variables such as _height_, _weight_, gender (_male_), _ethnicity_, _education_, mother's (_mother_education_) and father's education (_father_education_), _walk_ (e.g. walking time), _exercise_, if they smoke or not (_smokenow_), _tense_, _angry_ and _age_.
+
+The dataset can be found in Canvas in the Data folder (file name: earnings.csv):
+
+  (a) (10 points)  Subset the data and consider only the variables: _education_, _mother_education_, _father_education_, _walk_, _exercise_, _tense_, _angry_, _weight_, _height_. Check the correlation by performing a figure similar to Figure 1 below (make sure not to use the default colours but rather choose your own). Take special care to the labels and legend. What can you say about the results? What would you expect from a linear regression model (hint: there are some variables to be excluded/included in the model)? Perform a test statistic for the correlation between earn and education, write the hypothesis test and the results you will obtain. 
+  
+  ```{r, out.width="0.8\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Correlation"), echo=FALSE}
+knitr::include_graphics("ggcor.pdf")
+```
+
+  (b)  (10 points)  Perform a linear regression model using the variable _earn_ as the dependent variable and years of eductaion _education_ as the independent variable. What can you say about this covariate? Is it significant? Write down the hypothesis test. Plot the linear regression you have obtained in ggplot by using a subset of the data. This subset is obtained by restricting the variable _earn_ to be less than 2e+05 (similar to Figure 2 below)
+  
+   ```{r, out.width="0.8\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Linear Regression"), echo=FALSE}
+knitr::include_graphics("fig2.pdf")
+```
+  
+  (c) (20 points) Draw the qqplot by using the library ggplot for the model obtained in point b. Then perform the qqplot (using the library ggplot) for the two different groups of sex (similar to Figure 3 below). Take special care to the legend and the label. What can you say about this plot?
+ 
+  ```{r, out.width="0.8\\linewidth", include=TRUE, fig.align="center", fig.cap=c("QQplot for different groups"), echo=FALSE}
+knitr::include_graphics("fig3.pdf")
+```
+  
+  (d)  (20 points)  Perform in R the backward and forward procedure to select the covariates, remember to remove the rows with missing values. Did you obtain the same or different results from the two different procedures, please explain. Which procedure would you prefer? Comment what you discovered and the theoretical implications. Just for the backward solution compute the RSS and show the trend of RSS for beta1 in a plot by using ggplot in R (similar to Figure 4). (Hint: For RSS plot, set the range of x-axis  to be [0,1000]).
+  
+   ```{r, out.width="0.8\\linewidth", include=TRUE, fig.align="center", fig.cap=c("RSS for the backward procedure"), echo=FALSE}
+knitr::include_graphics("fig4.pdf")
+```
+
+  (e) (20 points) Perform a bootstrap of 500 samples for beta 1 (_height_), beta 2 (_male_), and beta 3 (_education_) for the coefficient obtained in the backward procedure in point d. Plot the beta coefficients that you have obtained with histograms with ggplot (similar to Figure 5). Remember to use the data without missing values.
+
+```{r, out.width="1.12\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Bootstrap Results"), echo=FALSE}
+knitr::include_graphics("bootstrap.pdf")
+```
+
+  (f) (20 points) Compute the LOO and K-fold cross validation and write the results. Compute the mean square error for both the LOO and the K-fold cross validation. Then plot the prediction against the true value for LOO, using ggplot. Describe the results. Remember to use the data without missing values.
+
