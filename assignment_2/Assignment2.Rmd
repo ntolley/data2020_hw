@@ -70,6 +70,29 @@ knitr::include_graphics("ggcor.pdf")
 
 (b) (10 points) Perform a linear regression model using the variable *earn* as the dependent variable and years of eductaion *education* as the independent variable. What can you say about this covariate? Is it significant? Write down the hypothesis test. Plot the linear regression you have obtained in ggplot by using a subset of the data. This subset is obtained by restricting the variable *earn* to be less than 2e+05 (similar to Figure 2 below)
 
+The code below creates a linear model that predicts "earn" by the education covariate. From the linear model there are three potential hypothesis tests with the following null hypotheses:
+
+-   The intercept of the linear model is zero
+
+-   The beta coefficient of the linear model is zero
+
+-   The model has the same explanatory power (residual error) as constant (flat line) model
+
+```{r}
+summary(lm(df$earn ~ df$education))
+```
+
+As we can see from the from the summary of the model output above, both the intercept and the slope are highly significant indicating that the *earn* variable is predicted well by the *education* variable.
+
+Next using the subset of the with *earn* \< 2e+05, we can visualize how well our linear model explains *earn* using just the *education* covariate
+
+```{r}
+earn_subset <- subset(df, df$earn < 2e5)
+
+ggplot(earn_subset, aes(x=education, y=earn)) + geom_point(na.rm=TRUE) +   geom_smooth(method='lm', na.rm=TRUE)
+
+```
+
 ```{r, out.width="0.8\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Linear Regression"), echo=FALSE}
 knitr::include_graphics("fig2.pdf")
 ```
