@@ -7,44 +7,89 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-**NAME: Your Name **  
-**DUE DATE: February 28th, 6pm** 
+**NAME: Nicholas Tolley**\
+**DUE DATE: February 28th, 6pm**
 
 ## Problem 1 (100 pts)
 
-In the earnings dataset you can find salary (_earn_) and some socio-demographic characteristics of each subject, including variables such as _height_, _weight_, gender (_male_), _ethnicity_, _education_, mother's (_mother_education_) and father's education (_father_education_), _walk_ (e.g. walking time), _exercise_, if they smoke or not (_smokenow_), _tense_, _angry_ and _age_.
+In the earnings dataset you can find salary (*earn*) and some socio-demographic characteristics of each subject, including variables such as *height*, *weight*, gender (*male*), *ethnicity*, *education*, mother's (*mother_education*) and father's education (*father_education*), *walk* (e.g. walking time), *exercise*, if they smoke or not (*smokenow*), *tense*, *angry* and *age*.
 
 The dataset can be found in Canvas in the Data folder (file name: earnings.csv):
 
-  (a) (10 points)  Subset the data and consider only the variables: _education_, _mother_education_, _father_education_, _walk_, _exercise_, _tense_, _angry_, _weight_, _height_. Check the correlation by performing a figure similar to Figure 1 below (make sure not to use the default colours but rather choose your own). Take special care to the labels and legend. What can you say about the results? What would you expect from a linear regression model (hint: there are some variables to be excluded/included in the model)? Perform a test statistic for the correlation between earn and education, write the hypothesis test and the results you will obtain. 
-  
-  ```{r, out.width="0.8\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Correlation"), echo=FALSE}
+(a) (10 points) Subset the data and consider only the variables: *education*, *mother_education*, *father_education*, *walk*, *exercise*, *tense*, *angry*, *weight*, *height*. Check the correlation by performing a figure similar to Figure 1 below (make sure not to use the default colours but rather choose your own). Take special care to the labels and legend. What can you say about the results? What would you expect from a linear regression model (hint: there are some variables to be excluded/included in the model)? Perform a test statistic for the correlation between earn and education, write the hypothesis test and the results you will obtain.
+
+```{r}
+library(ggplot2)
+library(boot)
+library(tidyverse)
+library(ggcorrplot)
+library(tidyr)
+
+df <- read.csv('earnings.csv')
+```
+
+The code below stores a subset of the dataset with the columns indicated above. Since we are calculating the correlation between columns, rows with missing values in any column are removed.
+
+```{r}
+subset_cols <- c('education', 'mother_education', 'father_education',
+                 'walk', 'exercise', 'tense', 'angry', 'weight', 'height')
+df_subset <- subset(df, select=subset_cols)
+df_subset <- drop_na(df_subset)
+```
+
+Next we can calculate the correlation between the columns contained in the subset, and visualize the result as a heatmap.
+
+```{r}
+corr_matrix <- cor(df_subset)
+ggcorrplot(corr_matrix, hc.order=TRUE, type="lower", outline.col = "white")
+```
+
+As we can see there are several variables that exhibit a near perfect correlation with one another. The most highly correlated columns include:
+
+education \<-\> mother_education
+
+education \<-\> father_education
+
+father_education \<-\> mother_education
+
+tense \<-\> angry
+
+If we were to build a linear regression model, we would need to remove 2 of the education variables, and either the tense or angry variable. This is because the dataset exhibits what is known as multicollinearity, in other words there is redundant information in the columns. If we were to try and create a linear model on the full dataset, there would not be a unique combination of regression ("beta") coefficients that minimize the residual error. For example, the same coefficient could be assigned tot he angry or tense columns.
+
+The code below calculates the correlation coefficient, and associated p-value, between the earn and education columns. The p-value refers to the probability of the null hypothesis that these two variables are uncorrelated (correlation=0).
+
+```{r}
+cor.test(df$earn, df$education)
+```
+
+We can see that despite the correlation being relatively low (cor=0.3), the result is highly significant with a p-value \< 2.2e-16. We can therefore reject the null hypothesis that the "earn" and "education" variables are uncorrelated with one another.
+
+```{r, out.width="0.8\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Correlation"), echo=FALSE}
 knitr::include_graphics("ggcor.pdf")
 ```
 
-  (b)  (10 points)  Perform a linear regression model using the variable _earn_ as the dependent variable and years of eductaion _education_ as the independent variable. What can you say about this covariate? Is it significant? Write down the hypothesis test. Plot the linear regression you have obtained in ggplot by using a subset of the data. This subset is obtained by restricting the variable _earn_ to be less than 2e+05 (similar to Figure 2 below)
-  
-   ```{r, out.width="0.8\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Linear Regression"), echo=FALSE}
+(b) (10 points) Perform a linear regression model using the variable *earn* as the dependent variable and years of eductaion *education* as the independent variable. What can you say about this covariate? Is it significant? Write down the hypothesis test. Plot the linear regression you have obtained in ggplot by using a subset of the data. This subset is obtained by restricting the variable *earn* to be less than 2e+05 (similar to Figure 2 below)
+
+```{r, out.width="0.8\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Linear Regression"), echo=FALSE}
 knitr::include_graphics("fig2.pdf")
 ```
-  
-  (c) (20 points) Draw the qqplot by using the library ggplot for the model obtained in point b. Then perform the qqplot (using the library ggplot) for the two different groups of sex (similar to Figure 3 below). Take special care to the legend and the label. What can you say about this plot?
- 
-  ```{r, out.width="0.8\\linewidth", include=TRUE, fig.align="center", fig.cap=c("QQplot for different groups"), echo=FALSE}
+
+(c) (20 points) Draw the qqplot by using the library ggplot for the model obtained in point b. Then perform the qqplot (using the library ggplot) for the two different groups of sex (similar to Figure 3 below). Take special care to the legend and the label. What can you say about this plot?
+
+```{r, out.width="0.8\\linewidth", include=TRUE, fig.align="center", fig.cap=c("QQplot for different groups"), echo=FALSE}
 knitr::include_graphics("fig3.pdf")
 ```
-  
-  (d)  (20 points)  Perform in R the backward and forward procedure to select the covariates, remember to remove the rows with missing values. Did you obtain the same or different results from the two different procedures, please explain. Which procedure would you prefer? Comment what you discovered and the theoretical implications. Just for the backward solution compute the RSS and show the trend of RSS for beta1 in a plot by using ggplot in R (similar to Figure 4). (Hint: For RSS plot, set the range of x-axis  to be [0,1000]).
-  
-   ```{r, out.width="0.8\\linewidth", include=TRUE, fig.align="center", fig.cap=c("RSS for the backward procedure"), echo=FALSE}
+
+(d) (20 points) Perform in R the backward and forward procedure to select the covariates, remember to remove the rows with missing values. Did you obtain the same or different results from the two different procedures, please explain. Which procedure would you prefer? Comment what you discovered and the theoretical implications. Just for the backward solution compute the RSS and show the trend of RSS for beta1 in a plot by using ggplot in R (similar to Figure 4). (Hint: For RSS plot, set the range of x-axis to be [0,1000]).
+
+```{r, out.width="0.8\\linewidth", include=TRUE, fig.align="center", fig.cap=c("RSS for the backward procedure"), echo=FALSE}
 knitr::include_graphics("fig4.pdf")
 ```
 
-  (e) (20 points) Perform a bootstrap of 500 samples for beta 1 (_height_), beta 2 (_male_), and beta 3 (_education_) for the coefficient obtained in the backward procedure in point d. Plot the beta coefficients that you have obtained with histograms with ggplot (similar to Figure 5). Remember to use the data without missing values.
+(e) (20 points) Perform a bootstrap of 500 samples for beta 1 (*height*), beta 2 (*male*), and beta 3 (*education*) for the coefficient obtained in the backward procedure in point d. Plot the beta coefficients that you have obtained with histograms with ggplot (similar to Figure 5). Remember to use the data without missing values.
 
 ```{r, out.width="1.12\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Bootstrap Results"), echo=FALSE}
 knitr::include_graphics("bootstrap.pdf")
 ```
 
-  (f) (20 points) Compute the LOO and K-fold cross validation and write the results. Compute the mean square error for both the LOO and the K-fold cross validation. Then plot the prediction against the true value for LOO, using ggplot. Describe the results. Remember to use the data without missing values.
-
+(f) (20 points) Compute the LOO and K-fold cross validation and write the results. Compute the mean square error for both the LOO and the K-fold cross validation. Then plot the prediction against the true value for LOO, using ggplot. Describe the results. Remember to use the data without missing values.
