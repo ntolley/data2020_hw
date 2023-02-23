@@ -22,7 +22,7 @@ The dataset can be found in Canvas in the Data folder (file name: earnings.csv):
 library(ggplot2)
 library(boot)
 library(tidyverse)
-library(ggcorrplot)
+library(GGally)
 library(tidyr)
 library(MASS)
 library(caret)
@@ -35,15 +35,18 @@ The code below stores a subset of the dataset with the columns indicated above. 
 ```{r}
 subset_cols <- c('education', 'mother_education', 'father_education',
                  'walk', 'exercise', 'tense', 'angry', 'weight', 'height')
+label_names <- c('Education', 'Mot._Education', 'Fat._Education', 'Walk', 'Exercise', 'Tense',
+                 'Angry', 'Weight', 'Height')
 df_subset <- subset(df, select=subset_cols)
 df_subset <- drop_na(df_subset)
+colnames(df_subset) <- label_names
 ```
 
 Next we can calculate the correlation between the columns contained in the subset, and visualize the result as a heatmap.
 
 ```{r}
 corr_matrix <- cor(df_subset)
-ggcorrplot(corr_matrix, hc.order=TRUE, type="lower", outline.col = "white")
+ggcorr(df_subset, label=TRUE,  low="steelblue", mid="white", high="darkred")
 ```
 
 As we can see there are several variables that exhibit a near perfect correlation with one another. The most highly correlated columns include:
