@@ -201,7 +201,7 @@ knitr::include_graphics("fig4.pdf")
 
 (e) (20 points) Perform a bootstrap of 500 samples for beta 1 (*height*), beta 2 (*male*), and beta 3 (*education*) for the coefficient obtained in the backward procedure in point d. Plot the beta coefficients that you have obtained with histograms with ggplot (similar to Figure 5). Remember to use the data without missing values.
 
-The code below creates a function that fits a linear model
+The code below creates a function that fits a linear model to a subset of the earnings dataset, and returns the resulting beta coefficients. Combining this with bootstrap function, we can aggregate the beta coefficients for randoms sets of 500.
 
 ```{r}
 fc <- function(d, i){
@@ -213,6 +213,8 @@ fc <- function(d, i){
 
 earn_boot <- boot(drop_na(df), fc, R=500)
 ```
+
+Next we can plot the beta coefficients from the bootstrap samples as a histogram and plot them against the true beta coefficients derived from a linear model on the full earnings dataset.
 
 ```{r}
 earn_boot_coef <- data.frame(earn_boot[["t"]])
@@ -232,68 +234,43 @@ ggplot(earn_boot_coef, aes(x=value)) + geom_histogram(bins=50) +
   theme_bw()
 ```
 
-```{r}
-earn_boot_coef <- data.frame(earn_boot[["t"]])
-colnames(earn_boot_coef) <- names(earn_boot[["t0"]])
-
-ggplot(earn_boot_coef, aes(x=height)) + geom_histogram(bins=50) + 
-  labs(title='Height coefficient bootstrap', x='Beta Coefficient', y='Count') +
-  geom_vline(xintercept=earn_boot[["t0"]][["height"]], color="red") +
-  theme_bw()
-
-ggplot(earn_boot_coef, aes(x=male)) + geom_histogram(bins=50) + 
-  labs(title='Male coefficient bootstrap', x='Beta Coefficient', y='Count') +
-  geom_vline(xintercept=earn_boot[["t0"]][["male"]], color="red") +
-  theme_bw()
-
-ggplot(earn_boot_coef, aes(x=education)) + geom_histogram(bins=50) + 
-  labs(title='Education coefficient bootstrap', x='Beta Coefficient', y='Count') +
-  geom_vline(xintercept=earn_boot[["t0"]][["education"]], color="red") +
-  theme_bw()
-
-
-```
-
-```{r}
-earn_boot_coef <- data.frame(earn_boot[["t"]])
-colnames(earn_boot_coef) <- names(earn_boot[["t0"]])
-ggplot(earn_boot_coef, aes(x=male)) + geom_histogram(bins=50) + 
-  labs(title='Male coefficient bootstrap', x='Beta Coefficient', y='Count') +
-  geom_vline(xintercept=earn_boot[["t0"]][["male"]], color="red") +
-  theme_bw()
-```
-
-```{r}
-earn_boot_coef <- data.frame(earn_boot[["t"]])
-colnames(earn_boot_coef) <- names(earn_boot[["t0"]])
-ggplot(earn_boot_coef, aes(x=education)) + geom_histogram(bins=50) + 
-  labs(title='Education coefficient bootstrap', x='Beta Coefficient', y='Count') +
-  geom_vline(xintercept=earn_boot[["t0"]][["education"]], color="red") +
-  theme_bw()
-```
-
 ```{r, out.width="1.12\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Bootstrap Results"), echo=FALSE}
 knitr::include_graphics("bootstrap.pdf")
 ```
 
 (f) (20 points) Compute the LOO and K-fold cross validation and write the results. Compute the mean square error for both the LOO and the K-fold cross validation. Then plot the prediction against the true value for LOO, using ggplot. Describe the results. Remember to use the data without missing values.
 
+The code below performs leave-one-out cross validation using the model arrived at from the forward and backward passes. The RMSE calculated using this procedure is 21,289.3, or an MSE of 453,234,294.
+
 ```{r}
 train.control <- trainControl(method = "LOOCV")
-model_loocv <- train(earn~height + male + education, data=drop_na(df),
+model_loocv <- train(earn~height + male + education + tense + age, data=drop_na(df),
                method="lm", trControl=train.control)
-print(model_loocv)       
+print(model_loocv)
+summary(model_loocv)
 ```
+
+The code below performs the same steps for 10 fold cross validation. We see that the RMSE from this procedure is 20,572.79, or an MSE of 423,239,688
 
 ```{r}
 train.control <- trainControl(method = "cv", number=10)
-model_cv <- train(earn~height + male + education, data=drop_na(df),
+model_cv <- train(earn~height + male + education + tense + age, data=drop_na(df),
                method="lm", trControl=train.control)
 print(model_cv)
+summary(model_cv)
 ```
 
 ```{r}
-pred <- predict(model_cv, newdata = drop_na(df))
+model_summ_cv <-summary(model_cv[["finalModel"]])
+mean(model_summ_cv$residuals^2)
+```
+
+Comparing the results of the two cross validation procedures, we see that the estimated MSE is slightly smaller using 10 fold cross validation. As expected from the MSE, we additionally see the estimated R squared from 10 fold CV is higher for LOOCV (0.24 vs 0.2). Despite these minor differences it can be concluded that the procedures produce largely similar results for the efficacy this model for predicting earnings.
+
+The code below plots the true vs the predicted earnings using the model from the LOOCV procedure. As we can see the predictions are concentrated around the diagonal which indicates perfect accuracy. However there are several outliers where the true earnings for certain individuals are predicted to be much lower than reality. Additionally we see that some individuals are predicted to have negative earnings which is clearly unrealistic since the minimum earnings is zero.
+
+```{r}
+pred <- predict(model_loocv, newdata = drop_na(df))
 cv_df <- data.frame(true_earn=drop_na(df)$earn, pred_earn=pred)
 ggplot(cv_df, aes(x=true_earn, y=pred_earn)) + geom_point() +
   labs(title='Linear Model True Earnings vs Predicted Earnings', x='True', y='Predicted') + theme_bw() + geom_abline()
