@@ -158,6 +158,33 @@ Likewise, we can perform the forward pass by...
 mod_forward <- stepAIC(fit2, direction="forward", scope=list(upper=fit1, lower=fit2))
 ```
 
+To find the RSS associated with changing the beta 1 coefficient, we will first create a function that manually performs the matrix multiplication using the weights arrived at from the backward pass, and then updates the coefficient based on our input.
+
+```{r}
+beta_update <- function(new_val, mod, d){
+  beta_coef <- mod[["coefficients"]]
+  beta_coef[2] <- new_val
+  mod_d <- subset(d, select=names(mod[["coefficients"]][c(2,3,4,5,6)]))
+  mod_d <- data.frame(intercept=rep(1, nrow(mod_d)), mod_d)
+  pred <- as.matrix(mod_d) %*% beta_coef
+  
+  res <- sum((d$earn - pred)^2)
+  return(res)
+}
+
+rss_out <- rep(0, 1000)
+for (i in 1:1000){
+  rss_out[i] <- beta_update(i, mod_backward, drop_na(df))
+}
+
+rss_df <- data.frame(RSS=rss_out, beta1=c(1:1000))
+
+ggplot(data=rss_df, aes(x=beta1, y=rss_out)) + geom_point() + 
+  labs(title="RSS with altered height coefficient", y="RSS") + 
+  geom_vline(xintercept=mod_backward[["coefficients"]][2], color="red")
+
+```
+
 ```{r, out.width="0.8\\linewidth", include=TRUE, fig.align="center", fig.cap=c("RSS for the backward procedure"), echo=FALSE}
 knitr::include_graphics("fig4.pdf")
 ```
@@ -210,14 +237,18 @@ knitr::include_graphics("bootstrap.pdf")
 
 ```{r}
 train.control <- trainControl(method = "LOOCV")
-model <- train(earn~height + male + education, data=drop_na(df),
+model_loocv <- train(earn~height + male + education, data=drop_na(df),
                method="lm", trControl=train.control)
-print(model)       
+print(model_loocv)       
 ```
 
 ```{r}
 train.control <- trainControl(method = "cv", number=10)
-model <- train(earn~height + male + education, data=drop_na(df),
+model_cv <- train(earn~height + male + education, data=drop_na(df),
                method="lm", trControl=train.control)
-print(model)   
+print(model_cv)   
+```
+
+```{r}
+
 ```
