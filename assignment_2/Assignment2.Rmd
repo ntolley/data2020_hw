@@ -246,9 +246,12 @@ print(model_loocv)
 train.control <- trainControl(method = "cv", number=10)
 model_cv <- train(earn~height + male + education, data=drop_na(df),
                method="lm", trControl=train.control)
-print(model_cv)   
+print(model_cv)
 ```
 
 ```{r}
-
+pred <- predict(model_cv, newdata = drop_na(df))
+cv_df <- data.frame(true_earn=drop_na(df)$earn, pred_earn=pred)
+ggplot(cv_df, aes(x=true_earn, y=pred_earn)) + geom_point() +
+  labs(title='Linear Model True Earnings vs Predicted Earnings', x='True', y='Predicted') + theme_bw() + abline()
 ```
