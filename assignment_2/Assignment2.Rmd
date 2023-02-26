@@ -79,9 +79,9 @@ The code below creates a linear model that predicts "earn" by the education cova
 
 -   The intercept of the linear model is zero
 
--   The beta coefficient of the linear model is zero
+-   The beta coefficient for education of the linear model is zero
 
--   The model has the same explanatory power (residual error) as constant (flat line) model
+-   The model has the same explanatory power (residual error) as constant line set to the mean of the data
 
 ```{r}
 earn_fit <- lm(df$earn ~ df$education)
@@ -105,6 +105,10 @@ knitr::include_graphics("fig2.pdf")
 
 (c) (20 points) Draw the qqplot by using the library ggplot for the model obtained in point b. Then perform the qqplot (using the library ggplot) for the two different groups of sex (similar to Figure 3 below). Take special care to the legend and the label. What can you say about this plot?
 
+The code below creates a QQ plot on the residuals of the model above.
+
+As we can see the residuals are in fact not normally distributed. Instead we see that there is a rightward skew such that the mode of the distribution is negative, but a larger proportion of the probability mass is spread over positive residuals
+
 ```{r}
 model_residuals <- resid(earn_fit)
 p <- seq(0.05, 0.95, 0.01)
@@ -113,14 +117,11 @@ theoretical_quantiles <- qnorm(p, mean=mean(model_residuals), sd=sd(model_residu
 qplot(theoretical_quantiles, sample_quantiles) + geom_abline() + labs(title='Residuals Q-Q Plot', y='Residuals', x='Theoretical') + theme_bw()
 ```
 
+Next we can visualize the QQ plots of the earn variable (not the residuals) for males and females separately. To allow for direct comparison the shows the quantiles with respect to a standard normal distribution. The first observation we can make is that neither of these subgroups have normally distributed earnings. Instead there is a strong positive skew such that the majority of males and females make a relatively small amount of money, but a smaller proportion with high earnings are spread out.
+
 ```{r}
 earn_quantiles_male <- quantile(subset(df, df$male==1)$earn, p, na.rm=TRUE)
 earn_quantiles_female <- quantile(subset(df, df$male==0)$earn, p, na.rm=TRUE)
-
-theoretical_quantiles_male <- qnorm(p, mean=mean(earn_quantiles_male), 
-                                    sd=sd(earn_quantiles_male))
-theoretical_quantiles_female <- qnorm(p, mean=mean(earn_quantiles_female), 
-                                      sd=sd(earn_quantiles_female))
 
 theoretical_quantiles_male <- qnorm(p, mean=0, sd=1)
 theoretical_quantiles_female <- qnorm(p, mean=0, sd=1)
@@ -143,22 +144,25 @@ knitr::include_graphics("fig3.pdf")
 
 (d) (20 points) Perform in R the backward and forward procedure to select the covariates, remember to remove the rows with missing values. Did you obtain the same or different results from the two different procedures, please explain. Which procedure would you prefer? Comment what you discovered and the theoretical implications. Just for the backward solution compute the RSS and show the trend of RSS for beta1 in a plot by using ggplot in R (similar to Figure 4). (Hint: For RSS plot, set the range of x-axis to be [0,1000]).
 
-The code below performs the backward procedure to select...
+The code below performs the backward procedure to select the best fit model. The procedure starts with a model that contains all covariates, and successively removes variables that have the lowest predictive ability.
 
 ```{r}
 fit1 <- lm(earn~., data=drop_na(df))
 fit2 <- lm(earn~1, data=drop_na(df))
 mod_backward <- stepAIC(fit1, direction="backward", scope=list(upper=fit1, lower=fit2))
-
+summary(mod_backward)
 ```
 
-Likewise, we can perform the forward pass by...
+Likewise, we can perform the forward pass by starting with a minimal model that predicts a flat line, and successively add the covariates which individually have the highest predictive ability (lowest RSS when they are used as the solve covariate).
 
 ```{r}
 mod_forward <- stepAIC(fit2, direction="forward", scope=list(upper=fit1, lower=fit2))
+summary(mod_forward)
 ```
 
-To find the RSS associated with changing the beta 1 coefficient, we will first create a function that manually performs the matrix multiplication using the weights arrived at from the backward pass, and then updates the coefficient based on our input.
+From the results above we can see that the forward and backward passes actually arrive at the same final model of 'earn \~ height + male + education + tense + age'. Since the both approaches pick the optimal beta coefficients for these terms, the models are in fact identical.
+
+To find the RSS associated with changing the beta 1 coefficient, we will first create a function that manually performs the matrix multiplication using the weights arrived at from the backward pass, and then updates the coefficient based on our input. With this function we can simply pass in the true beta coefficient for the height variable and see that the resulting RSS is 6.46e+11
 
 ```{r}
 beta_update <- function(new_val, mod, d){
@@ -172,6 +176,13 @@ beta_update <- function(new_val, mod, d){
   return(res)
 }
 
+beta_update(mod_backward[["coefficients"]][2], mod_backward, drop_na(df))
+
+```
+
+Using this function in a for loop we can plot the RSS as a function of the beta 1 coefficient and observe that the minima occurs exactly at the beta coefficient used in the true model (red line).
+
+```{r}
 rss_out <- rep(0, 1000)
 for (i in 1:1000){
   rss_out[i] <- beta_update(i, mod_backward, drop_na(df))
@@ -182,7 +193,6 @@ rss_df <- data.frame(RSS=rss_out, beta1=c(1:1000))
 ggplot(data=rss_df, aes(x=beta1, y=rss_out)) + geom_point() + 
   labs(title="RSS with altered height coefficient", y="RSS") + 
   geom_vline(xintercept=mod_backward[["coefficients"]][2], color="red")
-
 ```
 
 ```{r, out.width="0.8\\linewidth", include=TRUE, fig.align="center", fig.cap=c("RSS for the backward procedure"), echo=FALSE}
@@ -190,6 +200,8 @@ knitr::include_graphics("fig4.pdf")
 ```
 
 (e) (20 points) Perform a bootstrap of 500 samples for beta 1 (*height*), beta 2 (*male*), and beta 3 (*education*) for the coefficient obtained in the backward procedure in point d. Plot the beta coefficients that you have obtained with histograms with ggplot (similar to Figure 5). Remember to use the data without missing values.
+
+The code below creates a function that fits a linear model
 
 ```{r}
 fc <- function(d, i){
@@ -205,10 +217,41 @@ earn_boot <- boot(drop_na(df), fc, R=500)
 ```{r}
 earn_boot_coef <- data.frame(earn_boot[["t"]])
 colnames(earn_boot_coef) <- names(earn_boot[["t0"]])
+
+earn_boot_coef <- subset(earn_boot_coef, select=c('height', 'male', 'education'))
+earn_boot_coef <- gather(earn_boot_coef)
+earn_boot_vline <- data.frame(key=c('height', 'male', 'education'), 
+                              value=c(earn_boot[["t0"]][["height"]], 
+                                      earn_boot[["t0"]][["male"]], 
+                                      earn_boot[["t0"]][["education"]]))
+
+ggplot(earn_boot_coef, aes(x=value)) + geom_histogram(bins=50) + 
+  labs(x='Beta Coefficient', y='Count') +
+  geom_vline(data=earn_boot_vline, aes(xintercept=value), color="red") +
+  facet_wrap(~ key)
+  theme_bw()
+```
+
+```{r}
+earn_boot_coef <- data.frame(earn_boot[["t"]])
+colnames(earn_boot_coef) <- names(earn_boot[["t0"]])
+
 ggplot(earn_boot_coef, aes(x=height)) + geom_histogram(bins=50) + 
   labs(title='Height coefficient bootstrap', x='Beta Coefficient', y='Count') +
   geom_vline(xintercept=earn_boot[["t0"]][["height"]], color="red") +
   theme_bw()
+
+ggplot(earn_boot_coef, aes(x=male)) + geom_histogram(bins=50) + 
+  labs(title='Male coefficient bootstrap', x='Beta Coefficient', y='Count') +
+  geom_vline(xintercept=earn_boot[["t0"]][["male"]], color="red") +
+  theme_bw()
+
+ggplot(earn_boot_coef, aes(x=education)) + geom_histogram(bins=50) + 
+  labs(title='Education coefficient bootstrap', x='Beta Coefficient', y='Count') +
+  geom_vline(xintercept=earn_boot[["t0"]][["education"]], color="red") +
+  theme_bw()
+
+
 ```
 
 ```{r}
@@ -253,5 +296,5 @@ print(model_cv)
 pred <- predict(model_cv, newdata = drop_na(df))
 cv_df <- data.frame(true_earn=drop_na(df)$earn, pred_earn=pred)
 ggplot(cv_df, aes(x=true_earn, y=pred_earn)) + geom_point() +
-  labs(title='Linear Model True Earnings vs Predicted Earnings', x='True', y='Predicted') + theme_bw() + abline()
+  labs(title='Linear Model True Earnings vs Predicted Earnings', x='True', y='Predicted') + theme_bw() + geom_abline()
 ```
