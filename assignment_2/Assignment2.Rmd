@@ -167,12 +167,39 @@ knitr::include_graphics("fig4.pdf")
 ```{r}
 fc <- function(d, i){
   d2 <- d[i,]
-  return(cor(d2$mort, d2$poor))
+  boot_fit <- lm(earn ~ height + male + education + tense + age, data=d2)
+  
+  return(boot_fit[['coefficients']])
 }
-bootcorr <- boot(drop_na(df), fc, R=500)
-bootcorr
-summary(bootcorr)
-plot(bootcorr)
+
+earn_boot <- boot(drop_na(df), fc, R=500)
+```
+
+```{r}
+earn_boot_coef <- data.frame(earn_boot[["t"]])
+colnames(earn_boot_coef) <- names(earn_boot[["t0"]])
+ggplot(earn_boot_coef, aes(x=height)) + geom_histogram(bins=50) + 
+  labs(title='Height coefficient bootstrap', x='Beta Coefficient', y='Count') +
+  geom_vline(xintercept=earn_boot[["t0"]][["height"]], color="red") +
+  theme_bw()
+```
+
+```{r}
+earn_boot_coef <- data.frame(earn_boot[["t"]])
+colnames(earn_boot_coef) <- names(earn_boot[["t0"]])
+ggplot(earn_boot_coef, aes(x=male)) + geom_histogram(bins=50) + 
+  labs(title='Male coefficient bootstrap', x='Beta Coefficient', y='Count') +
+  geom_vline(xintercept=earn_boot[["t0"]][["male"]], color="red") +
+  theme_bw()
+```
+
+```{r}
+earn_boot_coef <- data.frame(earn_boot[["t"]])
+colnames(earn_boot_coef) <- names(earn_boot[["t0"]])
+ggplot(earn_boot_coef, aes(x=education)) + geom_histogram(bins=50) + 
+  labs(title='Education coefficient bootstrap', x='Beta Coefficient', y='Count') +
+  geom_vline(xintercept=earn_boot[["t0"]][["education"]], color="red") +
+  theme_bw()
 ```
 
 ```{r, out.width="1.12\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Bootstrap Results"), echo=FALSE}
