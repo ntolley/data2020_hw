@@ -84,7 +84,8 @@ The code below creates a linear model that predicts "earn" by the education cova
 -   The model has the same explanatory power (residual error) as constant (flat line) model
 
 ```{r}
-summary(lm(df$earn ~ df$education))
+earn_fit <- lm(df$earn ~ df$education)
+summary(earn_fit)
 ```
 
 As we can see from the from the summary of the model output above, both the intercept and the slope are highly significant indicating that the *earn* variable is predicted well by the *education* variable.
@@ -105,15 +106,35 @@ knitr::include_graphics("fig2.pdf")
 (c) (20 points) Draw the qqplot by using the library ggplot for the model obtained in point b. Then perform the qqplot (using the library ggplot) for the two different groups of sex (similar to Figure 3 below). Take special care to the legend and the label. What can you say about this plot?
 
 ```{r}
-model_residuals <- resid(lm(earn_subset$earn ~ earn_subset$education))
+model_residuals <- resid(earn_fit)
 p <- seq(0.05, 0.95, 0.01)
 sample_quantiles <- quantile(model_residuals, p)
 theoretical_quantiles <- qnorm(p, mean=mean(model_residuals), sd=sd(model_residuals))
-qplot(theoretical_quantiles, sample_quantiles) + geom_abline() + labs(title='Residuals Q-Q Plot') + theme_bw()
+qplot(theoretical_quantiles, sample_quantiles) + geom_abline() + labs(title='Residuals Q-Q Plot', y='Residuals', x='Theoretical') + theme_bw()
 ```
 
 ```{r}
-qplot(theoretical_quantiles, sample_quantiles) + geom_abline() + labs(title='Residuals Q-Q Plot') + theme_bw()
+earn_quantiles_male <- quantile(subset(df, df$male==1)$earn, p, na.rm=TRUE)
+earn_quantiles_female <- quantile(subset(df, df$male==0)$earn, p, na.rm=TRUE)
+
+theoretical_quantiles_male <- qnorm(p, mean=mean(earn_quantiles_male), 
+                                    sd=sd(earn_quantiles_male))
+theoretical_quantiles_female <- qnorm(p, mean=mean(earn_quantiles_female), 
+                                      sd=sd(earn_quantiles_female))
+
+theoretical_quantiles_male <- qnorm(p, mean=0, sd=1)
+theoretical_quantiles_female <- qnorm(p, mean=0, sd=1)
+
+earn_quantiles <- c(earn_quantiles_male, earn_quantiles_female)
+theoretical_quantiles <- c(theoretical_quantiles_male, theoretical_quantiles_female)
+earn_sex <- c(rep('Male', each=length(earn_quantiles_male)),
+              rep('Female', each=length(earn_quantiles_female)))
+
+earn_sex_df <- data.frame(earn_quantiles, theoretical_quantiles, earn_sex)
+
+ggplot(earn_sex_df, aes(x=theoretical_quantiles, y=earn_quantiles, color=earn_sex)) + 
+  geom_point() + labs(title='Earnings for different groups of sex', y='Sample', x='Theoretical') +
+  theme_bw()
 ```
 
 ```{r, out.width="0.8\\linewidth", include=TRUE, fig.align="center", fig.cap=c("QQplot for different groups"), echo=FALSE}
@@ -145,10 +166,10 @@ knitr::include_graphics("fig4.pdf")
 
 ```{r}
 fc <- function(d, i){
-  d2 <- data[i,]
+  d2 <- d[i,]
   return(cor(d2$mort, d2$poor))
 }
-bootcorr <- boot(data, fc, R=500)
+bootcorr <- boot(drop_na(df), fc, R=500)
 bootcorr
 summary(bootcorr)
 plot(bootcorr)
