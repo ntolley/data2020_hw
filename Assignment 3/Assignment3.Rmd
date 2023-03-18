@@ -24,6 +24,9 @@ library(dplyr)
 library(glmnet)
 library(haven)
 library(tidyr)
+library(caret)
+library(boot)
+library(MASS)
 set.seed(1)
 ```
 
@@ -62,13 +65,81 @@ df[1:6,]
 
 (a) (20 points) Now call the variables with an appropriate name (for example *p6b5* can become *Depression*). Perform a logistic regression using the variable *Depression* as the outcome and the remaining variables as the covariates. Be careful: the variable *Depression* has value 1 and 2, you should transform in 0,1 before running the logistic regression in R (1 for Yes, 0 for No). What are the important and significant covariates for the depression? For these, what can you say about the standard error? Perform the binned residual plot by using the library ggplot2 in R. Then write a function in R that gives the odds ratio for each beta and its upper and lower confidence intervals (CI). Use this function to produce the beta coefficient related to the covariate (ADD or *p6b10*), and its CI in term of ODDS RATIO. What can you say about that? Is still significant?
 
-(b) (20 points) Use the forward step procedure to detect the important covariates. Then, only for estimates that are greater than 0, draw with ggplot a plot similar to Figure 1. So in the x-axis, you should have each beta (beta1, beta2, etc.). In the y-axis, the estimate greater than 0 with the correspondent standard error. Be careful this plot is taken from another data set, so do not expect similar results. Take special care of the legend and the label. What can you say about this plot?
+The code below renames the columns to more human readable names, as well as transforms the outcome column to values of 0 or 1
 
 ```{r}
-fit1 <- lm(earn~., data=drop_na(df))
-fit2 <- lm(earn~1, data=drop_na(df))
-mod_backward <- stepAIC(fit1, direction="backward", scope=list(upper=fit1, lower=fit2))
-summary(mod_backward)
+new_cols <- c()
+
+df_pred <- df
+colnames(df_pred)[which(names(df_pred) == 'p6b5')] <- 'depression'
+df_pred['depression'] <- df_pred['depression'] - 1
+
+```
+
+Next we fit a logistic regression model to the data and summarize the results. As shown, the significant covariates are... The reason they are significant is because the values have a very low probability of being equal to zero (the null hypothesis), therefore the standard errors for the significant coefficients are relatively small compared to the magnitude of the coefficient's estimate.
+
+```{r}
+fit_logistic <- glm(depression ~ ., data=df_pred, family=binomial(link="logit"))
+summary(fit_logistic)
+```
+
+Next we can visualize the errors of this model using a binned residual plot
+
+```{r}
+pred_logistic <- fit_logistic$fitted.values
+
+plot(c(0,1), c(-1,1), xlab="Estimated  Pr (depression)", ylab="Observed - estimated", type="n", main="Residual plot", mgp=c(2,.5,0))
+abline(0,0, col="gray", lwd=.5)
+#points(pred_logistic, df_pred$depression-pred_logistic, pch=20, cex=.2)
+
+### Binned residual Plot 
+
+ ## Defining binned residuals
+
+binned.resids <- function (x, y, nclass=sqrt(length(x))){
+  breaks.index <- floor(length(x)*(1:(nclass-1))/nclass)
+  breaks <- c (-Inf, sort(x)[breaks.index], Inf)
+  output <- NULL
+  xbreaks <- NULL
+  x.binned <- as.numeric (cut (x, breaks))
+  for (i in 1:nclass){
+    items <- (1:length(x))[x.binned==i]
+    x.range <- range(x[items])
+    xbar <- mean(x[items])
+    ybar <- mean(y[items])
+    n <- length(items)
+    sdev <- sd(y[items])
+    output <- rbind (output, c(xbar, ybar, n, x.range, 2*sdev/sqrt(n)))
+  }
+  colnames (output) <- c ("xbar", "ybar", "n", "x.lo", "x.hi", "2se")
+  return (list (binned=output, xbreaks=xbreaks))
+}
+
+br <- binned.resids(pred_logistic, df_pred$depression-pred_logistic, nclass=10)$binned
+plot(range(br[,1]), range(br[,2],br[,6],-br[,6]), xlab="Estimated  Pr (depression)", ylab="Average residual", type="n", main="Binned residual plot", mgp=c(2,.5,0))
+abline (0,0, col="gray", lwd=.5)
+lines (br[,1], br[,6], col="gray", lwd=.5)
+lines (br[,1], -br[,6], col="gray", lwd=.5)
+points (br[,1], br[,2], pch=19, cex=.5)
+```
+
+The code below expresses the beta coefficients in terms of odds ratios
+
+```{r}
+1+1
+```
+
+(a) (20 points) Use the forward step procedure to detect the important covariates. Then, only for estimates that are greater than 0, draw with ggplot a plot similar to Figure 1. So in the x-axis, you should have each beta (beta1, beta2, etc.). In the y-axis, the estimate greater than 0 with the correspondent standard error. Be careful this plot is taken from another data set, so do not expect similar results. Take special care of the legend and the label. What can you say about this plot?
+
+```{r}
+fit_start <- glm(depression ~ 1, data=df_pred, family=binomial(link="logit"))
+fit_end <- glm(depression ~ ., data=df_pred, family=binomial(link="logit"))
+forward_logistic <- stepAIC(fit_start, direction="forward", scope=list(upper=fit_end, lower=fit_start))
+summary(forward_logistic)
+```
+
+```{r}
+1+1
 ```
 
 ```{r, out.width="0.5\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Estimate"), echo=FALSE}
@@ -80,7 +151,7 @@ knitr::include_graphics("fig1.png")
 ```{r}
 fc <- function(d, i){
   d2 <- d[i,]
-  boot_fit <- lm(earn ~ height + male + education + tense + age, data=d2)
+  boot_fit <- glm()
   
   return(boot_fit[['coefficients']])
 }
