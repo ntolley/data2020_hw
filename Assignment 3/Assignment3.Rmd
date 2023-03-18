@@ -23,17 +23,41 @@ library(readr)
 library(dplyr)
 library(glmnet)
 library(haven)
+library(tidyr)
 set.seed(1)
-
-df<read_dta(file='FF_wave6_2020v2.dta')
 ```
 
 (a) (20 points) Consider the variable *doctor diagnosed youth with depression/anxiety*. In the data set, the name of this variable is *p6b5*. Then consider in the data set these variables: *p6b10*, *p6b35*, *p6b55*, *p6b60*, *p6c21*, *p6f32*, *p6f35*, *p6h74*, *p6h102*, *p6i7*, *p6i8*, *p6i11*, *p6j37*, *k6b21a*, *k6b22a*, *k6c1*, *k6c4e*, *k6c28*, *k6d37*, *k6f63*, *ck6cbmi*, *k6d10*. Now, you have a data set with 4898 subjects and 23 variables. Clean the data in these three steps. 1- Each variable has a value with a number and a text (for example, a value for the variable *p6b5* is *2 No*). Remove the text from all the variables in the data set (hint: use the function sub for each column). 2- Transform each variable in numeric (hint: use the function as.numeric for each column). 3- Transform all the values less than 0 in NA and then remove all your NA values from the data set. Show the dimensions of the cleaned data and print the first 6 rows.
 
-Step 1)
+The code below subsets the columns indicated, transforms the columns into type numeric, replaces negative numbers with NA, and then drops NA rows from the dataframe.
 
 ```{r}
+subset_cols <- c('p6b5', 'p6b10', 'p6b35', 'p6b55', 'p6b60', 'p6c21', 'p6f32', 'p6f35', 'p6h74', 'p6h102', 'p6i7', 'p6i8', 'p6i11', 'p6j37', 'k6b21a', 'k6b22a', 'k6c1', 'k6c4e', 'k6c28', 'k6d37', 'k6f63', 'ck6cbmi', 'k6d10')
 
+df<-read_dta(file='FF_wave6_2020v2.dta')
+df <- subset(df, select=subset_cols)
+
+for (col in subset_cols){
+  df[col] <- as.numeric(unlist(df[col]))
+}
+
+df[df < 0] <- NA
+df <- drop_na(df)
+
+
+
+```
+
+This produces a dataframe with dimensions:
+
+```{r}
+dim(df)
+```
+
+And the following first 6 rows:
+
+```{r}
+df[1:6,]
 ```
 
 (a) (20 points) Now call the variables with an appropriate name (for example *p6b5* can become *Depression*). Perform a logistic regression using the variable *Depression* as the outcome and the remaining variables as the covariates. Be careful: the variable *Depression* has value 1 and 2, you should transform in 0,1 before running the logistic regression in R (1 for Yes, 0 for No). What are the important and significant covariates for the depression? For these, what can you say about the standard error? Perform the binned residual plot by using the library ggplot2 in R. Then write a function in R that gives the odds ratio for each beta and its upper and lower confidence intervals (CI). Use this function to produce the beta coefficient related to the covariate (ADD or *p6b10*), and its CI in term of ODDS RATIO. What can you say about that? Is still significant?
