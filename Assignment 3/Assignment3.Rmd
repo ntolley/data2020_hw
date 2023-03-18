@@ -76,25 +76,20 @@ df_pred['depression'] <- df_pred['depression'] - 1
 
 ```
 
-Next we fit a logistic regression model to the data and summarize the results. As shown, the significant covariates are... The reason they are significant is because the values have a very low probability of being equal to zero (the null hypothesis), therefore the standard errors for the significant coefficients are relatively small compared to the magnitude of the coefficient's estimate.
+Next we fit a logistic regression model to the data and summarize the results. As shown, the significant covariates include: ADD, sleep_trouble, suspended, and school_attention_problem
+
+The reason they are significant is because the values have a very low probability of being equal to zero (the null hypothesis), therefore the standard errors for the significant coefficients are relatively small compared to the magnitude of the coefficient's estimate.
 
 ```{r}
 fit_logistic <- glm(depression ~ ., data=df_pred, family=binomial(link="logit"))
-summary(fit_logistic)
+summary_logistic <- summary(fit_logistic)
+summary_logistic
 ```
 
 Next we can visualize the errors of this model using a binned residual plot
 
 ```{r}
 pred_logistic <- fit_logistic$fitted.values
-
-plot(c(0,1), c(-1,1), xlab="Estimated  Pr (depression)", ylab="Observed - estimated", type="n", main="Residual plot", mgp=c(2,.5,0))
-abline(0,0, col="gray", lwd=.5)
-#points(pred_logistic, df_pred$depression-pred_logistic, pch=20, cex=.2)
-
-### Binned residual Plot 
-
- ## Defining binned residuals
 
 binned.resids <- function (x, y, nclass=sqrt(length(x))){
   breaks.index <- floor(length(x)*(1:(nclass-1))/nclass)
@@ -123,10 +118,21 @@ lines (br[,1], -br[,6], col="gray", lwd=.5)
 points (br[,1], br[,2], pch=19, cex=.5)
 ```
 
-The code below expresses the beta coefficients in terms of odds ratios
+The code below expresses the beta coefficients in terms of odds ratios. First we create a function that takes in the estimate and its standard error, and returns a 95% confidence interval. Given the beta coefficient for ADD, the 95% CI for the odds ration is [2.12, 13.48], which we can interpret as: given the presence of ADD (value=2), the ratio of the probabilities of p(depression=1) / p(depression=0) is within that range.
 
 ```{r}
-1+1
+beta_to_odds <- function(estimate, standard_error){
+  beta_lower <- estimate - (1.96) * standard_error
+  beta_upper <- estimate + (1.96) * standard_error
+  
+  odds_CI <- c(exp(beta_lower), exp(beta_upper))
+  return (odds_CI)
+}
+
+ADD_est <- summary_logistic$coefficients[2,1]
+ADD_se <- summary_logistic$coefficients[2,2]
+
+print(beta_to_odds(ADD_est, ADD_se))
 ```
 
 (a) (20 points) Use the forward step procedure to detect the important covariates. Then, only for estimates that are greater than 0, draw with ggplot a plot similar to Figure 1. So in the x-axis, you should have each beta (beta1, beta2, etc.). In the y-axis, the estimate greater than 0 with the correspondent standard error. Be careful this plot is taken from another data set, so do not expect similar results. Take special care of the legend and the label. What can you say about this plot?
