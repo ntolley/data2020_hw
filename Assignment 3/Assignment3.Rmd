@@ -68,10 +68,10 @@ df[1:6,]
 The code below renames the columns to more human readable names, as well as transforms the outcome column to values of 0 or 1
 
 ```{r}
-new_cols <- c()
+col_names <- c('depression',	'ADD',	'mean',	'sleep_trouble',	'runaway',	'suspended',	'drug_problem',	'parent_jailed',	'smoker',	'jailed',	'neighbor_help',	'close_neighborhood',	'gang_problem',	'free_food',	'school_attention_problem',	'sports_team',	'parent_relationship',	'calm_home',	'father_close',	'physically_active',	'marijuana',	'BMI',	'menstruation_age')
 
 df_pred <- df
-colnames(df_pred)[which(names(df_pred) == 'p6b5')] <- 'depression'
+colnames(df_pred) <- col_names
 df_pred['depression'] <- df_pred['depression'] - 1
 
 ```
