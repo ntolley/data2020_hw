@@ -141,11 +141,24 @@ print(beta_to_odds(ADD_est, ADD_se))
 fit_start <- glm(depression ~ 1, data=df_pred, family=binomial(link="logit"))
 fit_end <- glm(depression ~ ., data=df_pred, family=binomial(link="logit"))
 forward_logistic <- stepAIC(fit_start, direction="forward", scope=list(upper=fit_end, lower=fit_start))
-summary(forward_logistic)
+summary_forward_logistic <- summary(forward_logistic)
 ```
 
 ```{r}
-1+1
+forward_coefficients <- summary_forward_logistic$coefficients
+forward_mean <- forward_coefficients[2:dim(forward_coefficients)[1],1]
+forward_errors <- forward_coefficients[2:dim(forward_coefficients)[1],2]
+forward_names <- rownames(forward_coefficients)[2:dim(forward_coefficients)[1]]
+
+df_forward <- data.frame(forward_names, forward_mean, forward_errors)
+colnames(df_forward) <- c('names', 'mean', 'error')
+
+df_forward <- filter(df_forward, df_forward$mean > 0)
+
+ggplot(df_forward, aes(x=names, y=mean)) + 
+  geom_errorbar(width=.1, aes(ymin=mean - (1.96*error), ymax=mean + (1.96*error))) +
+  labs(y='beta coefficient estimate', x='beta coefficient names',
+  title='Positive Beta Coefficient Estimates from forward model of p(depression)')
 ```
 
 ```{r, out.width="0.5\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Estimate"), echo=FALSE}
