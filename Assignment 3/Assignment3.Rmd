@@ -27,6 +27,8 @@ library(tidyr)
 library(caret)
 library(boot)
 library(MASS)
+library(tidyr)
+library(viridis)
 set.seed(1)
 ```
 
@@ -167,15 +169,37 @@ knitr::include_graphics("fig1.png")
 
 (d) (20 points) Perform a bootstrap of 1000 samples for beta 1 (ADD or *p6b10*), beta 2 (sleep or *p6b55*), and beta 3 (attention at school or *k6b21a*) with a model that contains all the coefficients obtained in the forward procedure in point c. Plot these three bootstrapped beta coefficients that you have obtained with a boxplot in the ggplot (similar to Figure 2). (make sure not to use the default colors but rather choose your own). What can you say about these three distributions obtained?
 
+The code below performs a 1000 sample bootstrap using the forward model solution from part c.
+
 ```{r}
-fc <- function(d, i){
-  d2 <- d[i,]
-  boot_fit <- glm()
-  
-  return(boot_fit[['coefficients']])
+fc <- function(df, i){
+  df_boot <- df[i,]
+  boot_glm <- glm(forward_logistic[["formula"]], data=df_boot, family=binomial(link="logit"))
+  return(boot_glm[['coefficients']])
 }
 
-earn_boot <- boot(drop_na(df), fc, R=500)
+depression_boot <- boot(df_pred, fc, R=1000)
+
+
+```
+
+Making the box plot for the bootstrap estimates for the beta coefficients indicated, we can see that all 3 seem to be symmetric with the first and 3rd quantiles being roughly equidistant from the median. Additionally, all 3 exhibit outliers at the maximum and minimum extents.
+
+Interestingly the sign of the coefficients indicate that ADD (beta1) is associate with increased probability of depression, whereas sleep trouble (beta2) and school attention problems (beta3) are both associated to increased probability of depression.
+
+```{r}
+df_boot_beta <- data.frame(depression_boot[["t"]][,1:length(forward_names) + 1])
+colnames(df_boot_beta) <- forward_names
+
+boot_cols <- c('ADD', 'sleep_trouble', 'school_attention_problem')
+df_boot_beta <-df_boot_beta[, boot_cols]
+colnames(df_boot_beta) <- c('Beta1', 'Beta2', 'Beta3')
+
+df_boot_beta <- pivot_longer(df_boot_beta, cols=colnames(df_boot_beta), names_to = "beta", values_to = "coef")
+
+ggplot(df_boot_beta, aes(x=beta, y=coef, fill=beta)) + geom_boxplot() + 
+  scale_fill_viridis(discrete = TRUE, alpha=0.6) +
+  labs(x='Beta', y='Estimate', title='Bootstrap (r=1000) beta estimates for p(depression) glm') + theme_bw()
 ```
 
 ```{r, out.width="0.6\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Boxplot"), echo=FALSE}
@@ -185,10 +209,11 @@ knitr::include_graphics("Fig2.pdf")
 (e) (20 points) Perform the Lasso method for the full model. Choose $\lambda$ with the cross-validation. Then perform the lasso with the best $\lambda$ obtained. Plot the results in ggplot. Describe the results you obtained. Are the coefficients obtained with the lasso procedure similar to the coefficients obtained with the forward procedure? Explain!
 
 ```{r}
-lasso_mod = glmnet(x_train, 
-                   y_train, 
-                   alpha = 1, 
-                   lambda = grid)
+
+```
+
+```{r}
+lasso_mod = glmnet(x_train, y_train, alpha = 1, lambda = grid)
 
 plot(lasso_mod)
 

@@ -26,6 +26,7 @@ library(GGally)
 library(tidyr)
 library(MASS)
 library(caret)
+library(viridis)
 
 df <- read.csv('earnings.csv')
 ```
