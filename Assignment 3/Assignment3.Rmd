@@ -29,7 +29,7 @@ library(boot)
 library(MASS)
 library(tidyr)
 library(viridis)
-set.seed(1)
+
 ```
 
 (a) (20 points) Consider the variable *doctor diagnosed youth with depression/anxiety*. In the data set, the name of this variable is *p6b5*. Then consider in the data set these variables: *p6b10*, *p6b35*, *p6b55*, *p6b60*, *p6c21*, *p6f32*, *p6f35*, *p6h74*, *p6h102*, *p6i7*, *p6i8*, *p6i11*, *p6j37*, *k6b21a*, *k6b22a*, *k6c1*, *k6c4e*, *k6c28*, *k6d37*, *k6f63*, *ck6cbmi*, *k6d10*. Now, you have a data set with 4898 subjects and 23 variables. Clean the data in these three steps. 1- Each variable has a value with a number and a text (for example, a value for the variable *p6b5* is *2 No*). Remove the text from all the variables in the data set (hint: use the function sub for each column). 2- Transform each variable in numeric (hint: use the function as.numeric for each column). 3- Transform all the values less than 0 in NA and then remove all your NA values from the data set. Show the dimensions of the cleaned data and print the first 6 rows.
@@ -158,6 +158,7 @@ colnames(df_forward) <- c('names', 'mean', 'error')
 df_forward <- filter(df_forward, df_forward$mean > 0)
 
 ggplot(df_forward, aes(x=names, y=mean)) + 
+  geom_point() +
   geom_errorbar(width=.1, aes(ymin=mean - (1.96*error), ymax=mean + (1.96*error))) +
   labs(y='beta coefficient estimate', x='beta coefficient names',
   title='Positive Beta Coefficient Estimates from forward model of p(depression)')
@@ -208,28 +209,49 @@ knitr::include_graphics("Fig2.pdf")
 
 (e) (20 points) Perform the Lasso method for the full model. Choose $\lambda$ with the cross-validation. Then perform the lasso with the best $\lambda$ obtained. Plot the results in ggplot. Describe the results you obtained. Are the coefficients obtained with the lasso procedure similar to the coefficients obtained with the forward procedure? Explain!
 
-```{r}
-
-```
+The code below performs cross validation using a 50/50 train/test split to find the best lambda value. With a logarithmically spaced grid between [10e-3, 1] with 100 elements, the best lambda value was identified to be 0.0376
 
 ```{r}
-lasso_mod = glmnet(x_train, y_train, alpha = 1, lambda = grid)
-
-plot(lasso_mod)
-
-##CV 
 set.seed(1)
-# Fit lasso model on training data
-cv.out = cv.glmnet(x_train, y_train, alpha = 1) 
+grid <- 10^seq(0, -3, length = 100)
+
+# Prepare train and test set for full_model
+train <- sample_frac(df_pred, 0.5)
+test <- setdiff(df_pred, train)
+ 
+x_train <- model.matrix(depression~., train)[,-1]
+x_test <- model.matrix(depression~., test)[,-1]
+
+y_train <- train$depression
+y_test <- test$depression
+
+cv.out = cv.glmnet(x_train, y_train, alpha = 1, lambda=grid) 
 
 # Select lambda that minimizes training MSE
 bestlam = cv.out$lambda.min 
+fit_lasso = glmnet(x_train, y_train, alpha = 1, lambda=bestlam) 
+print(bestlam)
 
-# Fit lasso model on full dataset
-out = glmnet(x, y, alpha = 1, lambda = grid) 
+```
 
-# Display coefficients using lambda chosen by CV
-lasso_coef = predict(out, type = "coefficients", s = bestlam)[1:20,] 
-lasso_coef
-lasso_mod <-  glmnet(x, y, alpha = 1)
+Next we can inspect the coefficients arrived at using the "best lambda" lasso model. Similar to the forward procedure, we see that ADD, school attention problems, and sleep trouble are all identified as good predictors with relatively large beta values compared to the remaining covariates. Unlike the forward model however, we see that the magnitude of all the beta coefficients are comparatively smaller (ADD with beta=1.783 vs. 0.116 when comparing forward vs. lasso). Additionally, these are the only 3 active coefficients in the final model. This is because lasso regularization penalizes the L1 norm of the coefficients, which enforces models that are simultaneously sparse, as well as possessing low magnitude beta coefficients.
+
+```{r}
+print(fit_lasso[["beta"]])
+```
+
+We can view the relationship between lambda and the regression coefficients by plotting the magnitude of the fit beta coefficients as a function of lambda. As we can see, a larger lambda produces a large penalty of regression coefficients such that they approach zero. The best lambda is plotted in black which intersects with the 3 non-zero beta coefficients in the fit model.
+
+```{r}
+beta_matrix <- t(as.matrix(coef(cv.out[["glmnet.fit"]])))
+lasso_df <- data.frame(beta_matrix[, 2:dim(beta_matrix)[2]])
+lasso_beta_cols <- colnames(lasso_df)
+lasso_df['lambda'] <- grid
+lasso_df <- pivot_longer(lasso_df, cols=all_of(lasso_beta_cols),
+                         names_to="beta", values_to = "value")
+
+ggplot(lasso_df, aes(x=lambda, y=value, color=beta)) +
+  geom_line() + scale_x_log10() + 
+  geom_vline(xintercept=bestlam, color="black") + 
+  labs(title='Lasso lambda selection for p(depression)', x='lambda', y='Beta Estimate')
 ```
