@@ -53,6 +53,8 @@ ggplot(var_exp_df, aes(x=pca_idx,y=var_exp)) + geom_bar(stat="identity") +
   labs(x="Principal Component", y="Variance Explained")
 ```
 
+Using the PC's with the variance explained cut off above, we can plot their loadings as a heatmap as shown below. Inspecting the dendrogram that represents the similarities between loadings, we can see that there are generally 5 major branches which presumably correspond to the big 5 personality types.
+
 ```{r}
 heatmap(pca_res$rotation[,1:35], col=brewer.pal(11,"RdBu"))
 ```
@@ -63,23 +65,28 @@ heatmap(pca_res$rotation[,1:35], col=brewer.pal(11,"RdBu"))
 
 (a) (40 points) Perform a factor analysis model with 5 factors with no rotation. How is the total variance explained from the model? Now perform the factor analysis model with 5 factors and with the varimax rotation (remember to not scale the data). Will you keep the model with 5 common factors or will you add another one? Explain why. Plot in an heatmap the matrix of factor loadings matrix (similar to Figure 1) Again choose your own colour by considering three different tonality. Interpretation: Now interpret the factors. Explain what each factor represents and give a name to each factor based on its high loadings.
 
+First we will convert the dataframe to numeric columns so that it can be handled directly by the factanal function.
+
 ```{r}
 df_numeric <- df
 for (i in 1:ncol(df_scaled)){
   df_numeric[,i] <- as.numeric(df_numeric[,i])
 }
 
-df_cov <- cov(as.matrix(df_numeric))
 ```
 
+Below we perform factor analysis with no rotation. When including just 5 factors, we see that the total variance explained from the model is fairly low at 38.4% (***CHANGE THIS***)
+
 ```{r}
-fact_no_rot <- factanal(covmat=df_cov, factors=5, rotation="none")
+fact_no_rot <- factanal(x=df_numeric, factors=5, rotation="none")
 fact_no_rot
 ```
 
+Next we perform the same analysis with varimax rotation. We can observe that the analysis results are almost entirely identical, except for the loadings on each individual factor. In both analyses the results at the bottom indicate a statistical test where the null hypothesis is that 5 factors is sufficient to explain the observed data. Since the p-value is very low, we reject this null hypothesis, indicating that we should include more factors in our model.
+
 ```{r}
-fact_varimax <- factanal(covmat=df_cov, factors=5, rotation="varimax")
-fact_varimax
+fact_varimax <- factanal(x=df_numeric, factors=5, rotation="varimax")
+print(fact_varimax)
 ```
 
 ```{r, out.width="0.9\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Estimate"), echo=FALSE}
@@ -87,3 +94,30 @@ knitr::include_graphics("HeatmapFA.pdf")
 ```
 
 (c) (20 points) Perform a bootstrap of 50 samples. For each of the bootstrapped sample save the proportion of variance explained by each factor (consider just the first five factors). Plot the proportion of variance explained by each of the five factors with a boxplot in the ggplot and then perform the histogram for each proportion. What can you say about these five distributions obtained? If we bootstrap the loadings we will obtain something no sense in a statistical framework. Explain why.
+
+```{r}
+fc <- function(df, i){
+  df_boot <- df[i,]
+  factanal_res <- factanal(x=df_numeric, factors=5, rotation="varimax")
+  loadings_res <- loadings(factanal_res)
+  prop_var <- colSums(loadings_res^2) / nrow(loadings_res)
+  return(prop_var)
+}
+
+factanal_boot <- boot(df_numeric, fc, R=50)
+```
+
+```{r}
+df_boot_beta <- data.frame(depression_boot[["t"]][,1:length(forward_names) + 1])
+colnames(df_boot_beta) <- forward_names
+
+boot_cols <- c('ADD', 'sleep_trouble', 'school_attention_problem')
+df_boot_beta <-df_boot_beta[, boot_cols]
+colnames(df_boot_beta) <- c('Beta1', 'Beta2', 'Beta3')
+
+df_boot_beta <- pivot_longer(df_boot_beta, cols=colnames(df_boot_beta), names_to = "beta", values_to = "coef")
+
+ggplot(df_boot_beta, aes(x=beta, y=coef, fill=beta)) + geom_boxplot() + 
+  scale_fill_viridis(discrete = TRUE, alpha=0.6) +
+  labs(x='Beta', y='Estimate', title='Bootstrap (r=1000) beta estimates for p(depression) glm') + theme_bw()
+```
