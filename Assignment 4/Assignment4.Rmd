@@ -22,6 +22,7 @@ library(dplyr)
 library(tidyr)
 library(boot)
 library(ggplot2)
+library(RColorBrewer)
 
 df <- read.csv('data-final.csv', sep='\t', header=TRUE)
 df <- df[1:1000,1:50]
@@ -53,13 +54,32 @@ ggplot(var_exp_df, aes(x=pca_idx,y=var_exp)) + geom_bar(stat="identity") +
 ```
 
 ```{r}
+heatmap(pca_res$rotation[,1:35], col=brewer.pal(11,"RdBu"))
+```
+
+```{r}
 
 ```
 
 (a) (40 points) Perform a factor analysis model with 5 factors with no rotation. How is the total variance explained from the model? Now perform the factor analysis model with 5 factors and with the varimax rotation (remember to not scale the data). Will you keep the model with 5 common factors or will you add another one? Explain why. Plot in an heatmap the matrix of factor loadings matrix (similar to Figure 1) Again choose your own colour by considering three different tonality. Interpretation: Now interpret the factors. Explain what each factor represents and give a name to each factor based on its high loadings.
 
 ```{r}
-mod1=factanal(covmat=ability.cov, factors=1, rotation="none")
+df_numeric <- df
+for (i in 1:ncol(df_scaled)){
+  df_numeric[,i] <- as.numeric(df_numeric[,i])
+}
+
+df_cov <- cov(as.matrix(df_numeric))
+```
+
+```{r}
+fact_no_rot <- factanal(covmat=df_cov, factors=5, rotation="none")
+fact_no_rot
+```
+
+```{r}
+fact_varimax <- factanal(covmat=df_cov, factors=5, rotation="varimax")
+fact_varimax
 ```
 
 ```{r, out.width="0.9\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Estimate"), echo=FALSE}
