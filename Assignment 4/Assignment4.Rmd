@@ -63,7 +63,7 @@ heatmap(pca_res$rotation[,1:35], col=brewer.pal(11,"RdBu"))
 
 ```
 
-(a) (40 points) Perform a factor analysis model with 5 factors with no rotation. How is the total variance explained from the model? Now perform the factor analysis model with 5 factors and with the varimax rotation (remember to not scale the data). Will you keep the model with 5 common factors or will you add another one? Explain why. Plot in an heatmap the matrix of factor loadings matrix (similar to Figure 1) Again choose your own colour by considering three different tonality. Interpretation: Now interpret the factors. Explain what each factor represents and give a name to each factor based on its high loadings.
+(b) (40 points) Perform a factor analysis model with 5 factors with no rotation. How is the total variance explained from the model? Now perform the factor analysis model with 5 factors and with the varimax rotation (remember to not scale the data). Will you keep the model with 5 common factors or will you add another one? Explain why. Plot in an heatmap the matrix of factor loadings matrix (similar to Figure 1) Again choose your own colour by considering three different tonality. Interpretation: Now interpret the factors. Explain what each factor represents and give a name to each factor based on its high loadings.
 
 First we will convert the dataframe to numeric columns so that it can be handled directly by the factanal function.
 
@@ -89,16 +89,25 @@ fact_varimax <- factanal(x=df_numeric, factors=5, rotation="varimax")
 print(fact_varimax)
 ```
 
+```{r}
+heatmap(fact_varimax$loadings, col=brewer.pal(11,"RdBu"),  Rowv = NA, Colv = NA)
+```
+
+```{}
+```
+
 ```{r, out.width="0.9\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Estimate"), echo=FALSE}
 knitr::include_graphics("HeatmapFA.pdf")
 ```
 
 (c) (20 points) Perform a bootstrap of 50 samples. For each of the bootstrapped sample save the proportion of variance explained by each factor (consider just the first five factors). Plot the proportion of variance explained by each of the five factors with a boxplot in the ggplot and then perform the histogram for each proportion. What can you say about these five distributions obtained? If we bootstrap the loadings we will obtain something no sense in a statistical framework. Explain why.
 
+The code below calculates the proportion of variance explained by using the fact that the sum of the loadings squared for a given factor, divided by the total number of variables, is equivalent to the proportion of variance explained. Plugging this into a function that performs factor analysis for a subset of dataset, we can perform the desired bootstrap to obtain estimates for the proportion of variance explained.
+
 ```{r}
 fc <- function(df, i){
   df_boot <- df[i,]
-  factanal_res <- factanal(x=df_numeric, factors=5, rotation="varimax")
+  factanal_res <- factanal(x=df_boot, factors=5, rotation="varimax")
   loadings_res <- loadings(factanal_res)
   prop_var <- colSums(loadings_res^2) / nrow(loadings_res)
   return(prop_var)
@@ -107,17 +116,23 @@ fc <- function(df, i){
 factanal_boot <- boot(df_numeric, fc, R=50)
 ```
 
+By plotting the bootstrap estimates of the proportion of variance explained on a box plot, we can clearly see that the factors are ordered by proportion of variance explained.
+
 ```{r}
-df_boot_beta <- data.frame(depression_boot[["t"]][,1:length(forward_names) + 1])
-colnames(df_boot_beta) <- forward_names
+factanal_boot_df <- data.frame(factanal_boot[["t"]])
+factanal_boot_df <- pivot_longer(factanal_boot_df, cols=colnames(factanal_boot_df), names_to = "factor", values_to = "propvar")
 
-boot_cols <- c('ADD', 'sleep_trouble', 'school_attention_problem')
-df_boot_beta <-df_boot_beta[, boot_cols]
-colnames(df_boot_beta) <- c('Beta1', 'Beta2', 'Beta3')
-
-df_boot_beta <- pivot_longer(df_boot_beta, cols=colnames(df_boot_beta), names_to = "beta", values_to = "coef")
-
-ggplot(df_boot_beta, aes(x=beta, y=coef, fill=beta)) + geom_boxplot() + 
-  scale_fill_viridis(discrete = TRUE, alpha=0.6) +
-  labs(x='Beta', y='Estimate', title='Bootstrap (r=1000) beta estimates for p(depression) glm') + theme_bw()
+ggplot(factanal_boot_df, aes(x=factor, y=propvar, fill=factor)) + geom_boxplot() + 
+  labs(x='Factor', y='Proportion Variance', title='Bootstrap (r=50) proportion variance explaind') + theme_bw()
 ```
+
+Plotting the same data above in the form of histograms, we can more clearly see the shape of the distributions. Same as above, the mean of the distributions shift left in accordance with a lower proportion of variance explained. In general however we see that the distributions are approximately normal with no striking outliers. Additionally the variance of each distribution seems roughly similar as well, which agrees with the boxplots which exhibit approximately equal interquartile ranges.
+
+```{r}
+ggplot(factanal_boot_df, aes(x=propvar)) + geom_histogram(bins=20) + 
+  labs(x='Proportion Variance Explained', y='Count') +
+  facet_wrap(~ factor)
+  theme_bw()
+```
+
+Finally, the reason it is not statistically meaningful to bootstrap the loadings is because the loadings are not uniquely determined. Ultimately the goal of factor analysis is to model the covariance structure of the observed data. However, this constraint alone is insufficient for uniqueness. While this issue is partially mitigated by identifying "rotations" that add extra constraints of factor loadings (varimax for example), the optimally rotated loadings across bootstrap samples of the dataset may still be very different from one sample to the next.
