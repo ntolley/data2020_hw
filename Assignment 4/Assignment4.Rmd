@@ -25,7 +25,7 @@ library(ggplot2)
 library(RColorBrewer)
 
 df <- read.csv('data-final.csv', sep='\t', header=TRUE)
-df <- df[1:1000,1:50]
+df <- df[,1:50]
 ```
 
 The code below loops through each column in the dataframe and scales the data.
@@ -75,25 +75,24 @@ for (i in 1:ncol(df_scaled)){
 
 ```
 
-Below we perform factor analysis with no rotation. When including just 5 factors, we see that the total variance explained from the model is fairly low at 38.4% (***CHANGE THIS***)
+Below we perform factor analysis with no rotation. When including just 5 factors, we see that the total variance explained from the model is fairly low at 39%
 
 ```{r}
 fact_no_rot <- factanal(x=df_numeric, factors=5, rotation="none")
 fact_no_rot
 ```
 
-Next we perform the same analysis with varimax rotation. We can observe that the analysis results are almost entirely identical, except for the loadings on each individual factor. In both analyses the results at the bottom indicate a statistical test where the null hypothesis is that 5 factors is sufficient to explain the observed data. Since the p-value is very low, we reject this null hypothesis, indicating that we should include more factors in our model.
+Next we perform the same analysis with varimax rotation. We can observe that the analysis results are almost entirely identical, except for the loadings on each individual factor. In both analyses the results at the bottom indicate a statistical test where the null hypothesis is that 5 factors is sufficient to explain the observed data. Since the p-value is very low (approximately zero), we reject this null hypothesis, indicating that we should include more factors in our model.
 
 ```{r}
 fact_varimax <- factanal(x=df_numeric, factors=5, rotation="varimax")
 print(fact_varimax)
 ```
 
+Finally we can inspect the loadings using a heat map. As shown below, the loadings on each factor exhibit a clear pattern where variables of the same 3 letter prefix exhibit large negative/positive (dark blue/red) values, with the remaining values close to zero. From the code book, we can see that these actually correspond to the "Big Five Factor Markers", where EXT=extraversion, EST=emotional stability, AGR=agreeableness, CSN=conscientiousness, and OPN=openess. This indicates that responses within these categories strongly co-vary with each other. For example, if someone rates EXT1 with a disagree response (disagree=1, question: I am the life of the party), it is strongly likely that they will respond with an agree response to EXT2 (agree=5, question:I don't talk a lot).
+
 ```{r}
 heatmap(fact_varimax$loadings, col=brewer.pal(11,"RdBu"),  Rowv = NA, Colv = NA)
-```
-
-```{}
 ```
 
 ```{r, out.width="0.9\\linewidth", include=TRUE, fig.align="center", fig.cap=c("Estimate"), echo=FALSE}
@@ -116,7 +115,7 @@ fc <- function(df, i){
 factanal_boot <- boot(df_numeric, fc, R=50)
 ```
 
-By plotting the bootstrap estimates of the proportion of variance explained on a box plot, we can clearly see that the factors are ordered by proportion of variance explained.
+By plotting the bootstrap estimates of the proportion of variance explained on a box plot, we can clearly see that the factors are ordered by proportion of variance explained. The first 2 factors corresponding to extraversion and emotional stability seem to exhibit that highest proportion of variance explained (\~10%), whereas the remaining are \~6-7%.
 
 ```{r}
 factanal_boot_df <- data.frame(factanal_boot[["t"]])
@@ -126,7 +125,7 @@ ggplot(factanal_boot_df, aes(x=factor, y=propvar, fill=factor)) + geom_boxplot()
   labs(x='Factor', y='Proportion Variance', title='Bootstrap (r=50) proportion variance explaind') + theme_bw()
 ```
 
-Plotting the same data above in the form of histograms, we can more clearly see the shape of the distributions. Same as above, the mean of the distributions shift left in accordance with a lower proportion of variance explained. In general however we see that the distributions are approximately normal with no striking outliers. Additionally the variance of each distribution seems roughly similar as well, which agrees with the boxplots which exhibit approximately equal interquartile ranges.
+Plotting the same data above in the form of histograms, we can more clearly see the shape of the distributions. Same as above, the mean of the distributions shift left in accordance with a lower proportion of variance explained. In general however we see that the distributions are exceptionally narrow with now outliers, indicating that each bootstrap sample estimate is largely similar.
 
 ```{r}
 ggplot(factanal_boot_df, aes(x=propvar)) + geom_histogram(bins=20) + 
