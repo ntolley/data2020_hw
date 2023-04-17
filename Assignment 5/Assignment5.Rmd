@@ -1,0 +1,143 @@
+---
+title: "Assignment 5"
+output: pdf_document
+latex_engine: xelatex
+header-includes:
+- \usepackage{blkarray}
+- \usepackage{amsmath}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+library(tidyverse)
+library(rlang)
+library(scales)
+library(mice)
+library(cluster)
+library(readstata13)
+```
+
+**NAME: Nicholas Tolley** \
+**DUE DATE: April 25th, 6pm**
+
+## Problem 1 (60 points)
+
+In the folder Assignment 5, you will find the data set called movie.rda. This data set contains one movie in each row and a score (in the column) for each movie for the soundtrack, the picture, the director, and the originality.
+
+```{r}
+rm(list=ls())
+load(file='movie.rda')
+load(file='popular2data.rda')
+```
+
+(a) (10 points) Check with elegant coding (cycle for or a function) which are the two variables containing the most NA values.
+
+The code below uses the is.na() function to check replace values in each cell with a boolean. We can then use the colSums() and sort() functions to identify the the variables "Original" and "Soundtrack" have the most missing values, while the other two have no missing values.
+
+```{r}
+movie_cols <- colnames(movie)
+na_counts <- colSums(is.na(movie))
+
+na_order <- sort(na_counts, index.return=TRUE)
+print(na_order$x)
+```
+
+(a) (25 points) Compute a random imputation for all the variables. Then compute the iterative regression imputation for the two variables containing the most NA (the ones discovered in point (a)).
+
+The code below performs a random imputation on all columns of the movie dataframe by looping over each column separately, indexing the locations where missing values occur, and filling in the values by randomly sampling a non-missing value from the same column. Since only two columns have missing values, these are the only ones the random imputation is applied to.
+
+```{r}
+
+random.imp <- function(a){
+  missing <- is.na(a)
+  n.missing <- sum(missing)
+  a.obs <- a[!missing]
+  imputed <- a
+  imputed[missing] <- sample(a.obs, n.missing, replace=TRUE)
+  return (imputed)
+}
+
+movie_imputed_random <- movie
+for (col in colnames(movie)){
+  movie_imputed_random[col] <- random.imp(movie[col])
+}
+
+# Show that values were succesfully imputed
+movie_cols <- colnames(movie_imputed_random)
+na_counts <- colSums(is.na(movie_imputed_random))
+
+na_order <- sort(na_counts, index.return=TRUE)
+print(na_order$x)
+```
+
+Next we perform an iterative regression imputation. We first initialize the procedure by performing a random imputation on the Original and Soundtrack columns. Next, we construct a for loop inside of which two linear models are constructed. The first is a regression model predicting Soundtrack with all other columns in the dataframe (along with the imputed Original variable). This model is then used to predict the missing values of the Soundtrack variable. We then perform the same procedure for the Original variable. This procedure is repeated 10 times.
+
+```{r}
+na_cols <- c('Soundtrack', 'Original')
+no_nacols <- c('Picture', 'Director')
+n <- dim(movie)[1]
+
+## Iterative regression imputation function
+impute <- function(a, a.impute){
+   ifelse (is.na(a), a.impute, a)
+}
+
+# Initialize columns with first round of random imputation
+movie_soundtrack_imp_iter <- random.imp(movie$Soundtrack)
+movie_original_imp_iter <- random.imp(movie$Original)
+
+n.sims <- 10
+for (s in 1:n.sims){
+  lm.1 <- lm(movie$Soundtrack ~ movie$Picture + movie$Director + movie_original_imp_iter,
+             data=movie)
+  pred.1 <- rnorm(n, predict(lm.1), sigma(lm.1))
+  movie_soundtrack_imp_iter <- impute(movie$Soundtrack, pred.1)
+  
+  lm.2 <- lm(movie$Original ~ movie$Picture + movie$Director + movie_soundtrack_imp_iter,
+             data=movie)
+  pred.2 <- rnorm(n, predict(lm.2), sigma(lm.2))
+  movie_original_imp_iter <- impute(movie$Original, pred.2)
+}
+
+# Print to ensure values are actually imputed
+print(sum(is.na(movie_soundtrack_imp_iter)))
+print(sum(is.na(movie_original_imp_iter)))
+```
+
+(a) (15 points) Compute the multivariate imputation by chained equations with the mice package. Plot (using ggplot) four histograms for the variable "Soundtrack": 1- the variable without missing value, 2- the complete variable obtained with random imputation, 3- the complete variable obtained with the iterative regression imputation, and 4- the complete variable obtained with the mice package.
+
+Below we perform multivariate imputation using the MICE package.
+
+```{r}
+imputed_Data <- mice(movie)
+movie_imp_mice <- complete(imputed_Data)
+```
+
+Next we plot the results of all the previous imputation procedures. As shown...
+
+```{r}
+original_df <- data.frame()
+
+soundtrack_df <- data.frame()
+```
+
+(a) (10 points) Compute the gap statistic for the complete data set obtained with the mice package. Perform the k-means cluster with the optimum number of clusters.
+
+```{r}
+gap_stat <- clusGap(df, FUN = kmeans, K.max = 10, B = 50)
+fviz_gap_stat(gap_stat)
+
+final <- kmeans(df, 4, nstart = 25)
+fviz_cluster(final, data = df)
+```
+
+## Problem 2 (40 pts)
+
+In the folder Assignment 5, you will find the data set called popular2data, containing data for 2000 pupils in 100 schools. he main outcome variable is the \`\`pupil popularity''. The explanatory variables are pupil gender (boy = 0, girl = 1), pupil extraversion (10-point scale), and teacher experience in years.
+
+(a) (10 points) Perform a simple random intercept model, include all the covariate as fixed. Are the fixed covariates significant?
+
+(b) (15 points) Add to the previous model random slopes for both sex and extrav. What is the value of the error term (Variance) for the ranodm slope of the variable sex? What does this value suggest to you?
+
+(c) (15 points) Omit from the previous model the random slope of sex.What is the value of the mean effect of extraversion? What is the value of the random effect of the slope of extraversion?
