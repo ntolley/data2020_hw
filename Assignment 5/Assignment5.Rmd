@@ -18,7 +18,7 @@ library(mice)
 library(cluster)
 library(readstata13)
 library(arm)
-#library(factoextra)
+library(factoextra)
 ```
 
 **NAME: Nicholas Tolley**\
@@ -140,12 +140,18 @@ ggplot(soundtrack_df, aes(x=values, fill=imp_type)) + geom_histogram(bins=10) +
 
 (d) (10 points) Compute the gap statistic for the complete data set obtained with the mice package. Perform the k-means cluster with the optimum number of clusters.
 
-```{r}
-gap_stat <- clusGap(movie_imp_mice, FUN = kmeans, K.max = 10, B = 50)
-#fviz_gap_stat(gap_stat)
+The code below calculates the gap statistic and visualizes the results. With a bootstrap of 1000, we see that the first value of k that reaches a maximum (such that the following value is lower) is k=5.
 
-#final <- kmeans(df, 4, nstart = 25)
-#fviz_cluster(final, data = df)
+```{r}
+gap_stat <- clusGap(movie_imp_mice, FUN = kmeans, K.max = 10, B = 1000)
+fviz_gap_stat(gap_stat)
+```
+
+Using k=5 clusters, we can go ahead and visualize the results. The graph below shows some interesting associations, for example the pink cluster seems to group scifi/action movies together such as Tron and Star Trek.
+
+```{r}
+final <- kmeans(movie_imp_mice, 5, nstart = 25)
+fviz_cluster(final, data = movie_imp_mice)
 ```
 
 ## Problem 2 (40 pts)
@@ -159,7 +165,6 @@ The code below performs a random intercept model with class as the group level v
 Given that 0.09 - (1.96 \* 0.01) \> 0, we can conclude that this covariate is significant.
 
 ```{r}
-## Varying-intercept model w/ no predictors
 M0 <- lmer(popular ~ pupil + extrav + sex + texp + (1 | class), data=popular2data)
 display(M0)
 ```
