@@ -13,12 +13,15 @@ library(knitr)
 library(tidyverse)
 library(rlang)
 library(scales)
+library(lme4)
 library(mice)
 library(cluster)
 library(readstata13)
+library(arm)
+#library(factoextra)
 ```
 
-**NAME: Nicholas Tolley** \
+**NAME: Nicholas Tolley**\
 **DUE DATE: April 25th, 6pm**
 
 ## Problem 1 (60 points)
@@ -43,7 +46,7 @@ na_order <- sort(na_counts, index.return=TRUE)
 print(na_order$x)
 ```
 
-(a) (25 points) Compute a random imputation for all the variables. Then compute the iterative regression imputation for the two variables containing the most NA (the ones discovered in point (a)).
+(b) (25 points) Compute a random imputation for all the variables. Then compute the iterative regression imputation for the two variables containing the most NA (the ones discovered in point (a)).
 
 The code below performs a random imputation on all columns of the movie dataframe by looping over each column separately, indexing the locations where missing values occur, and filling in the values by randomly sampling a non-missing value from the same column. Since only two columns have missing values, these are the only ones the random imputation is applied to.
 
@@ -105,7 +108,7 @@ print(sum(is.na(movie_soundtrack_imp_iter)))
 print(sum(is.na(movie_original_imp_iter)))
 ```
 
-(a) (15 points) Compute the multivariate imputation by chained equations with the mice package. Plot (using ggplot) four histograms for the variable "Soundtrack": 1- the variable without missing value, 2- the complete variable obtained with random imputation, 3- the complete variable obtained with the iterative regression imputation, and 4- the complete variable obtained with the mice package.
+(c) (15 points) Compute the multivariate imputation by chained equations with the mice package. Plot (using ggplot) four histograms for the variable "Soundtrack": 1- the variable without missing value, 2- the complete variable obtained with random imputation, 3- the complete variable obtained with the iterative regression imputation, and 4- the complete variable obtained with the mice package.
 
 Below we perform multivariate imputation using the MICE package.
 
@@ -117,19 +120,32 @@ movie_imp_mice <- complete(imputed_Data)
 Next we plot the results of all the previous imputation procedures. As shown...
 
 ```{r}
-original_df <- data.frame()
+movie_soundtrack <- movie$Soundtrack
+movie_soundtrack_imp_random <- movie_imputed_random$Soundtrack
+movie_soundtrack_imp_mice <- movie_imp_mice$Soundtrack
 
-soundtrack_df <- data.frame()
+soundtrack_df <- data.frame(movie_soundtrack, movie_soundtrack_imp_random,
+                            movie_soundtrack_imp_iter, movie_soundtrack_imp_mice)
+
+colnames(soundtrack_df) <- c('No Imputation', 'Random', 'Iterative', 'MICE')
+soundtrack_df <- pivot_longer(soundtrack_df, cols=colnames(soundtrack_df),
+                            names_to = "imp_type", values_to = "values")
+soundtrack_df <- drop_na(soundtrack_df)
+
+ggplot(soundtrack_df, aes(x=values, fill=imp_type)) + geom_histogram(bins=10) +
+  facet_wrap(~imp_type)
+
+
 ```
 
-(a) (10 points) Compute the gap statistic for the complete data set obtained with the mice package. Perform the k-means cluster with the optimum number of clusters.
+(d) (10 points) Compute the gap statistic for the complete data set obtained with the mice package. Perform the k-means cluster with the optimum number of clusters.
 
 ```{r}
-gap_stat <- clusGap(df, FUN = kmeans, K.max = 10, B = 50)
-fviz_gap_stat(gap_stat)
+gap_stat <- clusGap(movie_imp_mice, FUN = kmeans, K.max = 10, B = 50)
+#fviz_gap_stat(gap_stat)
 
-final <- kmeans(df, 4, nstart = 25)
-fviz_cluster(final, data = df)
+#final <- kmeans(df, 4, nstart = 25)
+#fviz_cluster(final, data = df)
 ```
 
 ## Problem 2 (40 pts)
@@ -138,6 +154,34 @@ In the folder Assignment 5, you will find the data set called popular2data, cont
 
 (a) (10 points) Perform a simple random intercept model, include all the covariate as fixed. Are the fixed covariates significant?
 
+The code below performs a random intercept model with class as the group level variable. Inspecting the fixed covariates, we can see that the coefficient for pupil is not significantly different from zero (in fact, it is exactly zero). On the other hand, it is clear that the other covariates are significant by estimating their 95% confidence interval. Taking the smallest valued coefficient of texp = 0.09 as an example, it has a standard error of 0.01.
+
+Given that 0.09 - (1.96 \* 0.01) \> 0, we can conclude that this covariate is significant.
+
+```{r}
+## Varying-intercept model w/ no predictors
+M0 <- lmer(popular ~ pupil + extrav + sex + texp + (1 | class), data=popular2data)
+display(M0)
+```
+
 (b) (15 points) Add to the previous model random slopes for both sex and extrav. What is the value of the error term (Variance) for the ranodm slope of the variable sex? What does this value suggest to you?
 
+The variance of the error term for the random slope of sex is 0.05\^2. Given that this is an exceptionally small variance, we can conclude that the random slope of sex is a useful group level effect.
+
+```{r}
+M1 <- lmer(popular ~ 1 + pupil + extrav + sex + texp + (sex | class) + 
+             (extrav | class) + (1 | class), data=popular2data)
+display(M1)
+```
+
 (c) (15 points) Omit from the previous model the random slope of sex.What is the value of the mean effect of extraversion? What is the value of the random effect of the slope of extraversion?
+
+The model below omits the random slope of sex, by retains the random slope of extraversion. We can use the function ranef() to print out the value for the random slope of extraversion specific to each class (the group level variable).
+
+```{r}
+M2 <- lmer(popular ~ 1 + pupil + extrav + sex + texp + 
+             (extrav | class) + (1 | class), data=popular2data)
+display(M2)
+
+ranef(M2)
+```
